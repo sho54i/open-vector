@@ -27,8 +27,12 @@ Requires Python, Playwright and its Chromium browser. Run `python3 tests/<name>.
 
 `python3 tests/review_cleanup.py` checks no-op Undo/Redo, field shortcut isolation and engine microbenchmarks. Timing results are diagnostic, not hardware-independent pass thresholds. Existing tests may regenerate screenshots under `planning/`; review those changes before saving a version.
 
-## Public testing copy
+## Main-site deployment
 
-`https://eve-draw-pencil.vercel.app` is a production URL in the separate `tensor-s4/eve-draw-pencil` Vercel project. Its standalone source is the sibling `DRAW-share` directory, which excludes tests, planning, roadmap and samples. That deployed copy remains the user-tested baseline; local Git saves do not deploy changes automatically.
+DRAW is published alongside Key·Viz at https://tensor-portal.vercel.app/projects. Open the editor at https://tensor-portal.vercel.app/draw/index.html.
 
-To publish a future accepted version, copy `vector_pen_tool.html` to `DRAW-share/index.html`, refresh any changed runtime assets, then deploy from that separate directory. Its `.vercel` linkage is local machine state and is intentionally excluded from this repository.
+The portal repository is `sho54i/Tensor-Portal`; its integration checkout is `/home/sho/AiM/tensor-portal-draw`. Accepted editor source is copied to `public/draw/index.html` with its vendor folder. Planning, tests and samples stay out of the deployment. The former `eve-draw-pencil.vercel.app` test URL now redirects to the main editor; the old test tool deployment has been retired.
+
+For a future accepted version, refresh `public/draw/index.html` and changed vendor assets in the portal repository, verify both Projects links and drawing/undo, then commit and push the portal's main branch. The old sibling `DRAW-share` is an archived test copy, not the current publication target. The `DRAW-redirect` directory maintains the retired URL's prebuilt redirect only.
+
+See `planning/portal-deployment.md` for release details. Git saves to H: do not automatically deploy updates.

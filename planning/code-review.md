@@ -2,7 +2,7 @@
 
 ## Result and scope
 
-The main editor received a small, behavior-tested cleanup. Baseline commit `b0c4332` is preserved as `baseline-pencil-verified-2026-09-07`; the cleaned revision is tagged `cleanup-reviewed-2026-09-07`. Both are stored in the independent `H:\draw-git` clone. The live Vercel copy remains the user-tested baseline; this review does not redeploy it.
+The main editor received a small, behavior-tested cleanup. Baseline commit `b0c4332` is preserved as `baseline-pencil-verified-2026-09-07`; the cleaned revision is tagged `cleanup-reviewed-2026-09-07`. Both are stored in the independent `H:\draw-git` clone. At review completion, Vercel still served the user-tested baseline. The later user-authorized main-site promotion is recorded in [portal-deployment.md](portal-deployment.md).
 
 DRAW has **no hosted backend**. The 4,600-line main HTML file contains the document model, Canvas renderer, input handling, persistence, parsers, export and optional Entity model client. Paper.js runs locally for Boolean geometry and SVG imports. The model service is external and was not reviewed here. Review effort focused on the active editor; the separate Vectoriser received a limited source inspection, and the old Gemini draft is archival, not a second supported implementation.
 
@@ -56,4 +56,4 @@ These are recommendations from the inspected code, **not changes already impleme
 
 Use `scripts/save_version.py` after validation to commit and synchronize the H: clone. Keep the hardware-verified baseline and each reviewed milestone as named tags. For larger experiments, use a branch and compare fixed documents plus device latency/memory measurements. A faster isolated function is insufficient if drawing fidelity or undo behavior regresses.
 
-The cleaned revision is the preferred **local reviewed version** based on the corrected outcomes and reduced work. Retain the current deployed baseline until the cleaned build receives any desired iPad acceptance; saving a Git version does not publish it automatically.
+The cleaned revision is the preferred **local reviewed version** based on the corrected outcomes and reduced work. The subsequent user-authorized deployment is recorded in [portal-deployment.md](portal-deployment.md); saving a Git version alone does not publish it automatically.
