@@ -1,0 +1,11 @@
+# Local machine / deployment state
+.vercel/
+.codegraph/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+*:Zone.Identifier
+.DS_Store
+Thumbs.db

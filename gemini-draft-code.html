@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVE // Vector Entity Studio</title>
+    <style>
+        :root {
+            --bg-void: #060709;
+            --bg-panel: #0E1118;
+            --bg-panel-header: #141824;
+            --bg-input: #1B2030;
+            --border-color: #232B3E;
+            --border-highlight: #00F0FF40;
+            --accent-gold: #FFB800;
+            --accent-cyan: #00F0FF;
+            --text-primary: #E0E6ED;
+            --text-muted: #6C7A9C;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            background-color: var(--bg-void);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 12px;
+            height: 100vh;
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: 38px 1fr 24px;
+        }
+
+        /* HEADER */
+        header {
+            background: var(--bg-panel-header);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+        }
+        .brand {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent-gold);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .brand-icon {
+            width: 10px; height: 10px;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+            transform: rotate(45deg);
+        }
+        .menu-bar { display: flex; gap: 16px; color: var(--text-muted); font-size: 11px; }
+        .menu-item { cursor: pointer; transition: color 0.2s; }
+        .menu-item:hover { color: var(--accent-cyan); }
+        .session-info { font-family: var(--font-mono); color: var(--text-muted); font-size: 10px; }
+
+        /* WORKSPACE */
+        .workspace {
+            display: grid;
+            grid-template-columns: 52px 1fr 320px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* TOOLBAR */
+        .toolbar {
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            gap: 8px;
+        }
+        .tool-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .tool-btn:hover { background: var(--bg-input); color: var(--text-primary); }
+        .tool-btn.active {
+            background: rgba(255, 184, 0, 0.1);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            box-shadow: 0 0 10px rgba(255, 184, 0, 0.2);
+        }
+        .tool-btn svg { width: 18px; height: 18px; fill: currentColor; }
+        .divider { width: 24px; height: 1px; background: var(--border-color); margin: 4px 0; }
+
+        /* CANVAS */
+        .viewport {
+            position: relative;
+            background-color: #080A0F;
+            background-image: 
+                linear-gradient(var(--border-highlight) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-highlight) 1px, transparent 1px);
+            background-size: 40px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .canvas-container {
+            width: 80%;
+            height: 80%;
+            background: #0C0F17;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .viewport-hud {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--accent-cyan);
+            background: rgba(14, 17, 24, 0.85);
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            pointer-events: none;
+        }
+
+        /* INSPECTOR PANEL */
+        .inspector {
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .panel-section {
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px;
+        }
+        .panel-header {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-gold);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .prop-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .prop-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .prop-label { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+        .prop-input, .prop-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            border-radius: 2px;
+            width: 100%;
+        }
+        .prop-input:focus, .prop-select:focus { outline: none; border-color: var(--accent-cyan); }
+
+        /* Sliders */
+        .slider-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+        .prop-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: var(--bg-input);
+            border-radius: 2px;
+            outline: none;
+        }
+        .prop-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 6px var(--accent-cyan);
+        }
+
+        /* Synthesizer Panel */
+        .synth-panel {
+            background: rgba(0, 240, 255, 0.02);
+            border: 1px solid var(--border-highlight);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 4px;
+        }
+        .prompt-input {
+            width: 100%;
+            height: 46px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            border-radius: 2px;
+            resize: none;
+            margin-bottom: 8px;
+        }
+        .prompt-input:focus { outline: none; border-color: var(--accent-gold); }
+        .action-btn {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 184, 0, 0.15);
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 2px;
+        }
+        .action-btn:hover {
+            background: var(--accent-gold);
+            color: var(--bg-void);
+            box-shadow: 0 0 12px rgba(255, 184, 0, 0.4);
+        }
+
+        /* Layer Tree */
+        .layer-tree { display: flex; flex-direction: column; gap: 4px; }
+        .layer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 8px;
+            background: var(--bg-input);
+            border: 1px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+        .layer-item.active { border-color: var(--accent-cyan); background: rgba(0,240,255,0.05); }
+        .layer-name { font-family: var(--font-mono); font-size: 11px; }
+
+        /* FOOTER */
+        footer {
+            background: var(--bg-panel-header);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        .status-accent { color: var(--accent-cyan); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <div class="brand-icon"></div>
+            ENTITY EVE // VECTOR
+        </div>
+        <div class="menu-bar">
+            <span class="menu-item">File</span>
+            <span class="menu-item">Edit</span>
+            <span class="menu-item">Path</span>
+            <span class="menu-item">Synthesizer</span>
+            <span class="menu-item">View</span>
+        </div>
+        <div class="session-info">CORE_ENGINE: ACTIVE | PATH_SYNTH_V2</div>
+    </header>
+
+    <div class="workspace">
+        <aside class="toolbar">
+            <button class="tool-btn" title="Selection (V)">
+                <svg viewBox="0 0 24 24"><path d="M7 2l12 11.2-5.8.5 3.3 7.3-2.2 1-3.2-7.4L7 18.5V2z"/></svg>
+            </button>
+            <button class="tool-btn active" title="Direct Node Select (A)">
+                <svg viewBox="0 0 24 24"><path d="M17.2 3A2.8 2.8 0 0 0 15 4.2L9 3a3 3 0 1 0-3.3 3.3L7 12.2a2.8 2.8 0 0 0 0 4.6l-1.3 5.9a3 3 0 1 0 2 0l1.3-5.9a2.8 2.8 0 0 0 2.2-1.2l6.2 1.2a3 3 0 1 0 3.3-3.3L19.5 11a2.8 2.8 0 0 0 0-4.6l1.3-5.9a2.8 2.8 0 0 0-3.6-3.5z"/></svg>
+            </button>
+            <div class="divider"></div>
+            <button class="tool-btn" title="Pen Tool (P)">
+                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            </button>
+            <button class="tool-btn" title="Generative Node Weaver (G)">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
+            </button>
+            <button class="tool-btn" title="Vector Ellipse (L)">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            </button>
+        </aside>
+
+        <main class="viewport" id="viewport">
+            <div class="canvas-container" id="canvas-container">
+                <svg id="vector-svg" width="100%" height="100%" viewBox="0 0 800 600">
+                    <defs>
+                        <linearGradient id="eve-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.9"/>
+                            <stop offset="100%" stop-color="#FFB800" stop-opacity="0.9"/>
+                        </linearGradient>
+                    </defs>
+                    <path id="synth-path" fill="none" stroke="url(#eve-grad)" stroke-width="2.5" />
+                    <g id="handles-layer"></g>
+                    <g id="nodes-layer"></g>
+                </svg>
+            </div>
+            
+            <div class="viewport-hud">
+                X: <span class="status-accent" id="hud-x">400.00</span> | 
+                Y: <span class="status-accent" id="hud-y">300.00</span> | 
+                NODES: <span class="status-accent" id="hud-nodes">8</span>
+            </div>
+        </main>
+
+        <aside class="inspector">
+            <div class="panel-section">
+                <div class="panel-header">
+                    <span>Path Synthesizer</span>
+                    <span style="color: var(--accent-cyan); font-size: 9px;">AI_NODE_GEN</span>
+                </div>
+                <div class="synth-panel">
+                    <textarea id="prompt-input" class="prompt-input" placeholder="Prompt entity path (e.g., 'Symmetrical biomechanical spline')..."></textarea>
+                    
+                    <div class="slider-field">
+                        <div class="slider-header">
+                            <span>NODE DENSITY</span>
+                            <span class="status-accent" id="val-density">8 pts</span>
+                        </div>
+                        <input type="range" id="slider-density" class="prop-slider" min="3" max="32" value="8">
+                    </div>
+
+                    <div class="slider-field">
+                        <div class="slider-header">
+                            <span>BEZIER TENSION</span>
+                            <span class="status-accent" id="val-tension">0.50</span>
+                        </div>
+                        <input type="range" id="slider-tension" class="prop-slider" min="0" max="100" value="50">
+                    </div>
+
+                    <div class="prop-field" style="margin-bottom: 10px;">
+                        <span class="prop-label">SYMMETRY AXIS</span>
+                        <select id="select-symmetry" class="prop-select">
+                            <option value="bilateral">Bilateral (X-Axis)</option>
+                            <option value="radial4">Radial (4-Fold)</option>
+                            <option value="radial8">Radial (8-Fold)</option>
+                            <option value="asymmetric">Asymmetric Void</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-synth" class="action-btn">⚡ SYNTHESIZE PATH</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <div class="panel-header">Transform</div>
+                <div class="prop-grid">
+                    <div class="prop-field">
+                        <span class="prop-label">BOUNDS W</span>
+                        <input type="text" id="prop-w" class="prop-input" value="300 px" readonly>
+                    </div>
+                    <div class="prop-field">
+                        <span class="prop-label">BOUNDS H</span>
+                        <input type="text" id="prop-h" class="prop-input" value="300 px" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section" style="flex-grow: 1;">
+                <div class="panel-header">
+                    <span>Entity Layers</span>
+                    <span style="color: var(--accent-cyan); cursor: pointer;">+</span>
+                </div>
+                <div class="layer-tree">
+                    <div class="layer-item active">
+                        <span class="layer-name">◇ Generated_Spline_01</span>
+                        <span style="font-size: 9px; color: var(--accent-gold);">ACTIVE</span>
+                    </div>
+                    <div class="layer-item">
+                        <span class="layer-name">◇ Grid_Backbone</span>
+                        <span style="font-size: 9px; color: var(--text-muted);">LOCKED</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <footer>
+        <div>MODE: <span class="status-accent">REALTIME NODE INTERPOLATION</span></div>
+        <div id="footer-status">STATE: READY</div>
+        <div>EVE_ENGINE v0.4</div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const sliderDensity = document.getElementById('slider-density');
+        const sliderTension = document.getElementById('slider-tension');
+        const selectSymmetry = document.getElementById('select-symmetry');
+        const promptInput = document.getElementById('prompt-input');
+        const btnSynth = document.getElementById('btn-synth');
+
+        const valDensity = document.getElementById('val-density');
+        const valTension = document.getElementById('val-tension');
+
+        const svgPath = document.getElementById('synth-path');
+        const handlesLayer = document.getElementById('handles-layer');
+        const nodesLayer = document.getElementById('nodes-layer');
+        const canvasContainer = document.getElementById('canvas-container');
+
+        const hudX = document.getElementById('hud-x');
+        const hudY = document.getElementById('hud-y');
+        const hudNodes = document.getElementById('hud-nodes');
+        const propW = document.getElementById('prop-w');
+        const propH = document.getElementById('prop-h');
+
+        let seed = 42;
+
+        // Seeded Pseudo-Random Generator
+        function seededRandom() {
+            let x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // Generate Procedural Anchor Points
+        function generatePoints(count, symmetry, promptText) {
+            // Hash prompt to influence seed
+            let promptHash = 0;
+            for (let i = 0; i < promptText.length; i++) {
+                promptHash += promptText.charCodeAt(i);
+            }
+            seed = 42 + promptHash;
+
+            const points = [];
+            const cx = 400, cy = 300;
+            const baseRadius = 140;
+
+            if (symmetry === 'bilateral') {
+                const halfCount = Math.floor(count / 2);
+                const halfPoints = [];
+                for (let i = 0; i <= halfCount; i++) {
+                    const angle = (i / halfCount) * Math.PI;
+                    const variance = (seededRandom() - 0.5) * 80;
+                    const r = baseRadius + variance;
+                    halfPoints.push({ x: cx + r * Math.sin(angle), y: cy - r * Math.cos(angle) });
+                }
+                points.push(...halfPoints);
+                for (let i = halfPoints.length - 2; i > 0; i--) {
+                    points.push({ x: cx - (halfPoints[i].x - cx), y: halfPoints[i].y });
+                }
+            } else if (symmetry === 'radial4' || symmetry === 'radial8') {
+                const folds = symmetry === 'radial4' ? 4 : 8;
+                const sectorPoints = Math.max(1, Math.floor(count / folds));
+                const sectorAngle = (Math.PI * 2) / folds;
+
+                const baseOffsets = [];
+                for (let i = 0; i < sectorPoints; i++) {
+                    baseOffsets.push((seededRandom() - 0.5) * 90);
+                }
+
+                for (let f = 0; f < folds; f++) {
+                    for (let i = 0; i < sectorPoints; i++) {
+                        const angle = f * sectorAngle + (i / sectorPoints) * sectorAngle;
+                        const r = baseRadius + baseOffsets[i];
+                        points.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
+                    }
+                }
+            } else { // Asymmetric
+                for (let i = 0; i < count; i++) {
+                    const angle = (i / count) * Math.PI * 2;
+                    const variance = (seededRandom() - 0.5) * 110;
+                    const r = baseRadius + variance;
+                    points.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
+                }
+            }
+
+            return points;
+        }
+
+        // Calculate Bezier Control Points Smoothly
+        function computeSmoothControlPoints(points, tension) {
+            const cp = [];
+            const n = points.length;
+            const t = tension * 0.4;
+
+            for (let i = 0; i < n; i++) {
+                const p0 = points[(i - 1 + n) % n];
+                const p1 = points[i];
+                const p2 = points[(i + 1) % n];
+
+                const vx = p2.x - p0.x;
+                const vy = p2.y - p0.y;
+
+                cp.push({
+                    cp1: { x: p1.x - vx * t, y: p1.y - vy * t },
+                    cp2: { x: p1.x + vx * t, y: p1.y + vy * t }
+                });
+            }
+            return cp;
+        }
+
+        // Render Path & Visual HUD Handles
+        function updateVectorCanvas() {
+            const density = parseInt(sliderDensity.value, 10);
+            const tension = parseFloat(sliderTension.value) / 100;
+            const symmetry = selectSymmetry.value;
+            const prompt = promptInput.value;
+
+            valDensity.textContent = `${density} pts`;
+            valTension.textContent = tension.toFixed(2);
+            hudNodes.textContent = density;
+
+            const points = generatePoints(density, symmetry, prompt);
+            if (points.length < 2) return;
+
+            const controlPoints = computeSmoothControlPoints(points, tension);
+
+            // Construct SVG Path String
+            let d = `M ${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)}`;
+            const n = points.length;
+
+            for (let i = 0; i < n; i++) {
+                const pNext = points[(i + 1) % n];
+                const cp1 = controlPoints[i].cp2;
+                const cp2 = controlPoints[(i + 1) % n].cp1;
+                d += ` C ${cp1.x.toFixed(2)} ${cp1.y.toFixed(2)}, ${cp2.x.toFixed(2)} ${cp2.y.toFixed(2)}, ${pNext.x.toFixed(2)} ${pNext.y.toFixed(2)}`;
+            }
+            svgPath.setAttribute('d', d + ' Z');
+
+            // Clear visual nodes/handles
+            handlesLayer.innerHTML = '';
+            nodesLayer.innerHTML = '';
+
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+            // Render Node Handles & Control Lines
+            points.forEach((pt, i) => {
+                minX = Math.min(minX, pt.x); maxX = Math.max(maxX, pt.x);
+                minY = Math.min(minY, pt.y); maxY = Math.max(maxY, pt.y);
+
+                const cp1 = controlPoints[i].cp1;
+                const cp2 = controlPoints[i].cp2;
+
+                // Handle Lines
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', cp1.x); line.setAttribute('y1', cp1.y);
+                line.setAttribute('x2', cp2.x); line.setAttribute('y2', cp2.y);
+                line.setAttribute('stroke', '#00F0FF');
+                line.setAttribute('stroke-width', '0.75');
+                line.setAttribute('stroke-dasharray', '3,3');
+                line.setAttribute('opacity', '0.6');
+                handlesLayer.appendChild(line);
+
+                // Control Handles
+                [cp1, cp2].forEach(cp => {
+                    const handleCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    handleCircle.setAttribute('cx', cp.x); handleCircle.setAttribute('cy', cp.y);
+                    handleCircle.setAttribute('r', '3');
+                    handleCircle.setAttribute('fill', '#00F0FF');
+                    handlesLayer.appendChild(handleCircle);
+                });
+
+                // Anchor Points
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', pt.x - 4); rect.setAttribute('y', pt.y - 4);
+                rect.setAttribute('width', '8'); rect.setAttribute('height', '8');
+                rect.setAttribute('fill', '#FFB800');
+                rect.setAttribute('stroke', '#080A0F');
+                rect.setAttribute('stroke-width', '1.5');
+                nodesLayer.appendChild(rect);
+            });
+
+            propW.value = `${Math.round(maxX - minX)} px`;
+            propH.value = `${Math.round(maxY - minY)} px`;
+        }
+
+        // Attach Realtime Event Listeners
+        sliderDensity.addEventListener('input', updateVectorCanvas);
+        sliderTension.addEventListener('input', updateVectorCanvas);
+        selectSymmetry.addEventListener('change', updateVectorCanvas);
+        btnSynth.addEventListener('click', () => {
+            seed += Math.floor(Math.random() * 100);
+            updateVectorCanvas();
+        });
+
+        // Viewport Mouse Telemetry
+        canvasContainer.addEventListener('mousemove', (e) => {
+            const rect = canvasContainer.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 800;
+            const y = ((e.clientY - rect.top) / rect.height) * 600;
+            hudX.textContent = x.toFixed(2);
+            hudY.textContent = y.toFixed(2);
+        });
+
+        // Initial Synthesis
+        updateVectorCanvas();
+    </script>
+</body>
+</html>

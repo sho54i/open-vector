@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outline to SVG Generator</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-color: #1e293b;
+            --accent-color: #2563eb;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        header {
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 1.5rem; margin: 0 0 8px 0; }
+        .container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .left-panel { flex: 1; }
+        .right-panel { flex: 2; }
+        label { font-weight: 600; font-size: 0.875rem; }
+        textarea {
+            flex: 1;
+            font-family: monospace;
+            font-size: 14px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            resize: none;
+            outline: none;
+        }
+        textarea:focus { border-color: var(--accent-color); }
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-secondary { background-color: #64748b; }
+        .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .btn-row .btn { flex: 1; min-width: 120px; }
+        textarea { user-select: text; }
+        #canvas-container {
+            flex: 1;
+            border: 1px dashed var(--border-color);
+            border-radius: 6px;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+        }
+        svg {
+            background: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Outline to SVG Diagram Vectorizer</h1>
+        <p style="margin:0; color:#64748b; font-size:0.9rem;">Indent using Tabs or 2/4 Spaces to nest items.</p>
+    </header>
+
+    <div class="container">
+        <!-- Input Panel -->
+        <div class="panel left-panel">
+            <label for="outline-input">Text Outline</label>
+            <textarea id="outline-input" placeholder="Root Node&#10;  Child Node 1&#10;    Grandchild A&#10;  Child Node 2">Core Backbone&#10;  AI Video Engine&#10;    Diffusion Models&#10;    Latent Space Upscaling&#10;  Agentic Framework&#10;    Task Planning Orchestrator&#10;    Memory Management&#10;  Front End UI&#10;    Node-Based Canvas</textarea>
+            <div class="btn-row">
+                <button class="btn" id="render-btn">Generate SVG Vector</button>
+                <button class="btn btn-secondary" id="download-btn">Download .svg File</button>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-secondary" id="save-outline-btn">Save Outline</button>
+                <button class="btn btn-secondary" id="copy-svg-btn">Copy SVG</button>
+            </div>
+        </div>
+
+        <!-- Output Preview Panel -->
+        <div class="panel right-panel">
+            <label>Live Vector View</label>
+            <div id="canvas-container">
+                <!-- Dynamic SVG injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const OUTLINE_KEY = 'draw-vectoriser-outline-v1';
+        const outlineInput = document.getElementById('outline-input');
+
+        document.getElementById('render-btn').addEventListener('click', generateDiagram);
+        document.getElementById('download-btn').addEventListener('click', downloadSVG);
+        document.getElementById('save-outline-btn').addEventListener('click', saveOutlineFile);
+        document.getElementById('copy-svg-btn').addEventListener('click', copySVG);
+
+        try {
+            const saved = localStorage.getItem(OUTLINE_KEY);
+            if (saved) outlineInput.value = saved;
+        } catch (e) {}
+
+        let renderTimer = null;
+        outlineInput.addEventListener('input', () => {
+            try { localStorage.setItem(OUTLINE_KEY, outlineInput.value); } catch (e) {}
+            clearTimeout(renderTimer);
+            renderTimer = setTimeout(generateDiagram, 200);
+        });
+
+        outlineInput.addEventListener('keydown', (e) => {
+            if (e.key !== 'Tab') return;
+            e.preventDefault();
+            const start = outlineInput.selectionStart;
+            const end = outlineInput.selectionEnd;
+            const value = outlineInput.value;
+            if (e.shiftKey) {
+                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                const block = value.slice(lineStart, end);
+                const next = block.replace(/^(\t|  )/gm, '');
+                outlineInput.value = value.slice(0, lineStart) + next + value.slice(end);
+                outlineInput.selectionStart = Math.max(lineStart, start - 2);
+                outlineInput.selectionEnd = lineStart + next.length;
+            } else {
+                outlineInput.value = value.slice(0, start) + '  ' + value.slice(end);
+                outlineInput.selectionStart = outlineInput.selectionEnd = start + 2;
+            }
+            outlineInput.dispatchEvent(new Event('input'));
+        });
+
+        window.addEventListener('paste', () => {
+            setTimeout(generateDiagram, 0);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            if (e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                saveOutlineFile();
+            } else if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                downloadSVG();
+            }
+        });
+
+        function parseOutline(text) {
+            const lines = text.split('\n');
+            const nodes = [];
+            const stack = [];
+
+            lines.forEach((line) => {
+                if (!line.trim()) return;
+
+                // Match tabs or spaces for indentation calculation
+                const indentMatch = line.match(/^([ \t]*)/);
+                const indentStr = indentMatch ? indentMatch[0] : '';
+                
+                // Treat a tab as 2 units, spaces as 1 unit for depth normalized calculation
+                let depth = 0;
+                for (let char of indentStr) {
+                    depth += (char === '\t') ? 2 : 1;
+                }
+                // Normalize step jumps (rough division to get hierarchy levels)
+                depth = Math.floor(depth / 2);
+
+                const cleanText = line.trim();
+                const node = { text: cleanText, children: [], parent: null, x: 0, y: 0 };
+
+                if (depth === 0) {
+                    nodes.push(node);
+                    stack[0] = node;
+                } else {
+                    // Find appropriate parent context from history stack
+                    const parent = stack[depth - 1] || stack[stack.length - 1];
+                    if (parent) {
+                        node.parent = parent;
+                        parent.children.push(node);
+                    } else {
+                        // Fallback if formatting jumps weirdly
+                        nodes.push(node);
+                    }
+                    stack[depth] = node;
+                }
+                // Wipe lower stack footprints
+                stack.length = depth + 1;
+            });
+
+            return nodes;
+        }
+
+        // Quick layout calculator (Horizontal Tree Topology)
+        function calculateLayout(nodes) {
+            let currentY = 40;
+            const nodeWidth = 180;
+            const nodeHeight = 40;
+            const levelGap = 80;
+            const rowGap = 25;
+
+            function positionNode(node, depth) {
+                node.x = 40 + depth * (nodeWidth + levelGap);
+                
+                if (node.children.length === 0) {
+                    node.y = currentY;
+                    currentY += nodeHeight + rowGap;
+                } else {
+                    node.children.forEach(child => positionNode(child, depth + 1));
+                    // Center parent node vertically between its outer bounding children
+                    const firstY = node.children[0].y;
+                    const lastY = node.children[node.children.length - 1].y;
+                    node.y = firstY + (lastY - firstY) / 2;
+                }
+            }
+
+            nodes.forEach(root => positionNode(root, 0));
+            return currentY + 40; // Total canvas height needed
+        }
+
+        function generateDiagram() {
+            const text = document.getElementById('outline-input').value;
+            const rootNodes = parseOutline(text);
+            
+            if (rootNodes.length === 0) return;
+
+            const totalHeight = calculateLayout(rootNodes);
+            
+            // Collect flat list of elements for drawing
+            const flatNodes = [];
+            function flatten(node) {
+                flatNodes.push(node);
+                node.children.forEach(flatten);
+            }
+            rootNodes.forEach(flatten);
+
+            // Dynamically calculate canvas boundary limits
+            const maxX = Math.max(...flatNodes.map(n => n.x)) + 200;
+            const canvasContainer = document.getElementById('canvas-container');
+            
+            // Build raw SVG XML String
+            let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${maxX}" height="${totalHeight}" viewBox="0 0 ${maxX} ${totalHeight}">`;
+            
+            // Define styling defs for clean rendering markup
+            svgContent += `
+                <defs>
+                    <style>
+                        .edge { fill: none; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 1; }
+                        .node-box { fill: #ffffff; stroke: #2563eb; stroke-width: 2; rx: 6px; }
+                        .node-text { fill: #1e293b; font-family: sans-serif; font-size: 13px; font-weight: 500; dominant-baseline: middle; text-anchor: middle; }
+                    </style>
+                </defs>
+            `;
+
+            // Draw Vector Paths (Edges) first so they lay behind boxes
+            flatNodes.forEach(node => {
+                if (node.parent) {
+                    const startX = node.parent.x + 180;
+                    const startY = node.parent.y + 20;
+                    const endX = node.x;
+                    const endY = node.y + 20;
+                    
+                    // Smooth cubic bezier path connections
+                    const controlX1 = startX + 40;
+                    const controlX2 = endX - 40;
+                    svgContent += `<path class="edge" d="M ${startX} ${startY} C ${controlX1} ${startY}, ${controlX2} ${endY}, ${endX} ${endY}" />`;
+                }
+            });
+
+            // Draw Vector Blocks (Nodes)
+            flatNodes.forEach(node => {
+                const textX = node.x + 90;
+                const textY = node.y + 20;
+                
+                svgContent += `
+                    <g>
+                        <rect class="node-box" x="${node.x}" y="${node.y}" width="180" height="40" rx="6" />
+                        <text class="node-text" x="${textX}" y="${textY}">${escapeHTML(node.text)}</text>
+                    </g>
+                `;
+            });
+
+            svgContent += `</svg>`;
+            canvasContainer.innerHTML = svgContent;
+            try { localStorage.setItem(OUTLINE_KEY, text); } catch (e) {}
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        function currentSVGString() {
+            let svgElement = document.querySelector('#canvas-container svg');
+            if (!svgElement) {
+                generateDiagram();
+                svgElement = document.querySelector('#canvas-container svg');
+            }
+            if (!svgElement) return '';
+            const serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(svgElement);
+            if (!svgString.startsWith('<?xml')) {
+                svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
+            }
+            return svgString;
+        }
+
+        function downloadText(filename, text, mime) {
+            const blob = new Blob([text], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 500);
+        }
+
+        function downloadSVG() {
+            const svgString = currentSVGString();
+            if (!svgString) return;
+            downloadText('outline-topology.svg', svgString, 'image/svg+xml;charset=utf-8');
+        }
+
+        function saveOutlineFile() {
+            const text = outlineInput.value || '';
+            if (!text.trim()) return;
+            try { localStorage.setItem(OUTLINE_KEY, text); } catch (e) {}
+            downloadText('outline.txt', text, 'text/plain;charset=utf-8');
+        }
+
+        function copySVG() {
+            const svgString = currentSVGString();
+            if (!svgString) return;
+            const done = () => {};
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(svgString).then(done).catch(() => fallbackCopy(svgString));
+            } else {
+                fallbackCopy(svgString);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+
+        window.__VECTORISER__ = {
+            generateDiagram,
+            downloadSVG,
+            saveOutlineFile,
+            copySVG,
+            currentSVGString,
+            getOutline: () => outlineInput.value,
+            setOutline: (text) => {
+                outlineInput.value = text;
+                generateDiagram();
+            }
+        };
+
+        generateDiagram();
+    </script>
+</body>
+</html>
