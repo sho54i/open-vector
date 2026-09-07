@@ -1,0 +1,27 @@
+{
+  "baseline": false,
+  "snapshotStable": true,
+  "pathCountAfterNoopUndo": 0,
+  "fieldOutcomes": {
+    "#entityEndpoint": {
+      "x0": 100,
+      "x1": 100,
+      "mode": "direct"
+    },
+    "#entityKey": {
+      "x0": 100,
+      "x1": 100,
+      "mode": "direct"
+    }
+  },
+  "benchmark": {
+    "pressureMs": 0,
+    "snapshotMs": 25.600000023841858,
+    "width": 4.300000000000001,
+    "pressureSamples": 20000,
+    "widthReads": 2000,
+    "snapshotAnchors": 10000,
+    "snapshotReads": 20
+  },
+  "browser": "148.0.7778.96"
+}

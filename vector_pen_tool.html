@@ -940,6 +940,7 @@
                 locked: false,
                 groupId: null,
                 closed: false,
+                fillRule: 'nonzero',
                 points: [],
                 stroke: strokeColorInput.value,
                 strokeWidth: Number(strokeWidthInput.value) || 2,
@@ -2657,13 +2658,20 @@
         function samplePencil(e, final = false) {
             if (!pencilStroke || e.pointerId !== pencilStroke.pointerId) return;
             const w = worldFromScreen(screenOfEvent(e));
-            if (pencilStroke.pen && e.pressure > 0) pencilStroke.pressures.push(e.pressure);
+            recordPencilPressure(e);
             const pts = pencilStroke.points;
             if (dist(w, pts[pts.length-1]) >= (final ? 0.001 : 1 / pencilStroke.scale)) pts.push(w);
         }
 
+        function recordPencilPressure(e) {
+            if (pencilStroke.pen && e.pressure > 0) {
+                pencilStroke.pressureSum += e.pressure;
+                pencilStroke.pressureCount++;
+            }
+        }
         function pencilWidth(stroke) {
-            const mean = stroke.pressures.length ? stroke.pressures.reduce((a,b) => a+b,0)/stroke.pressures.length : 0.5;
+            // Keep the same arithmetic mean without retaining/reducing every sample on each frame.
+            const mean = stroke.pressureCount ? stroke.pressureSum / stroke.pressureCount : 0.5;
             return Math.max(0.5, Math.min(16, stroke.baseWidth * (1 + stroke.strength * (2*mean-1))));
         }
         function panBy(dx, dy) {
@@ -2696,8 +2704,8 @@
                 if (pencilStroke) return;
                 pencilStroke = { points: [w], scale: camera.scale, pointerId: e.pointerId,
                     pen:e.pointerType === 'pen', smoothing:pencilPrefs.smoothing, strength:pencilPrefs.pressure / 100,
-                    baseWidth:e.pointerType === 'pen' ? pencilPrefs.width : (Number(strokeWidthInput.value) || 2), pressures:[] };
-                if (e.pointerType === 'pen' && e.pressure > 0) pencilStroke.pressures.push(e.pressure);
+                    baseWidth:e.pointerType === 'pen' ? pencilPrefs.width : (Number(strokeWidthInput.value) || 2), pressureSum:0, pressureCount:0 };
+                recordPencilPressure(e);
                 activePath = -1;
                 try { viewport.setPointerCapture(e.pointerId); } catch (err) {}
                 e.preventDefault();
@@ -3353,7 +3361,12 @@
             return { paths: [] };
         }
 
-        function snapshot() { return JSON.stringify({ paths: paths.map(clonePath), camera, hideNodes, showGrid, guides, artboards, activeArtboardId }); }
+        function snapshot() {
+            // JSON serialization already copies the document. Runtime IDs are recreated
+            // on restore and must not make an unchanged document look like a new edit.
+            const savedPaths = paths.map(({ id, ...path }) => path);
+            return JSON.stringify({ paths: savedPaths, camera, hideNodes, showGrid, guides, artboards, activeArtboardId });
+        }
         function pushHistory() {
             if (suppressHistory) return;
             const snap = snapshot();
@@ -4021,8 +4034,7 @@
 
         function isTyping(el) {
             const tag = (el && el.tagName || '').toLowerCase();
-            const type = (el && el.type || '').toLowerCase();
-            return tag === 'textarea' || tag === 'select' || (tag === 'input' && (type === 'text' || type === 'number' || type === 'search'));
+            return tag === 'textarea' || tag === 'select' || tag === 'input' || !!el?.isContentEditable;
         }
         function isMod(e) { return e.ctrlKey || e.metaKey; }
 
