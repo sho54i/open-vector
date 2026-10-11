@@ -54,3 +54,14 @@ navigation, logo/credit, theme persistence, text 0→1→Undo 0, Attach/Detach a
 hosted/source editor hash. Key-Viz and the previous release return 200; planning
 and tests remain excluded. Live package install/open/rollback smoke passed.
 Published directly through Vercel CLI; Git was not required or pushed.
+
+## Buttons/aesthetics + new logo release — 2026-10-11
+
+Editor commit 15a80b8 copied byte-identical to public/draw/index.html (sha256 b2b6868c…).
+Release feed 2026.10.11.1 (sequence 2026101101) added; earlier packages kept.
+Production: https://tensor-portal-n5syoxkay-tensor-s4.vercel.app (Ready). The CLI's
+first `--prod` run also deployed (tensor-portal-4f83sr5ls), superseded a minute later.
+Checked before deploying: origin/main had nothing newer than the checkout, and the
+previous production build was the 2026-09-08 CLI release. Live checks: exact hash,
+/projects 200, /draw 307 → editor, old package 200, logo, rect 1→Undo 0, zoom collapsed,
+theme switch, no page errors. Published via Vercel CLI; portal Git not committed/pushed.
