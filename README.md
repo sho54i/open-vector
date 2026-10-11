@@ -4,7 +4,7 @@ Open `vector_pen_tool.html` in a browser. This is a static Canvas/vector editor:
 
 ## Version history and H: archive
 
-Working repository: `/home/sho/AREA-54/software-MD/DRAW`
+Working repository: `/home/sho/AiM/Entity-OS/crts/open-vector`
 
 Independent Git archive and checkout: `H:\draw-git` (`/mnt/h/draw-git` in WSL). The archive is a full clone, including tests and planning, with its own Git objects. It remains usable if the working directory is lost.
 
@@ -14,7 +14,7 @@ Independent Git archive and checkout: `H:\draw-git` (`/mnt/h/draw-git` in WSL). 
 After testing a future version, run from WSL:
 
 ```bash
-python3 /home/sho/AREA-54/software-MD/DRAW/scripts/save_version.py "Describe the change and tests passed"
+python3 /home/sho/AiM/Entity-OS/crts/open-vector/scripts/save_version.py "Describe the change and tests passed"
 ```
 
 Use `--check` to inspect readiness without writing. The helper commits all non-ignored project changes, then fetches commits/tags into the archive and fast-forwards it. It refuses a dirty archive, a different branch/origin or divergent history; it never resets or overwrites archive edits. If the H: sync fails after committing, the source commit survives and rerunning retries the save. Review changes before running: the message records your validation; the helper does not run tests automatically.
@@ -33,7 +33,7 @@ DRAW is published alongside Key·Viz at https://tensor-portal.vercel.app/project
 
 The portal repository is `sho54i/Tensor-Portal`; its integration checkout is `/home/sho/AiM/tensor-portal-draw`. Accepted editor source is copied to `public/draw/index.html` with its vendor folder. Planning, tests and samples stay out of the deployment. The former `eve-draw-pencil.vercel.app` test URL now redirects to the main editor; the old test tool deployment has been retired.
 
-For a future accepted version, refresh `public/draw/index.html` and changed vendor assets in the portal repository, verify both Projects links and drawing/undo, then commit and push the portal's main branch. The old sibling `DRAW-share` is an archived test copy, not the current publication target. The `DRAW-redirect` directory maintains the retired URL's prebuilt redirect only.
+For a future accepted version, refresh `public/draw/index.html` and changed vendor assets in the portal repository, verify both Projects links and drawing/undo, then commit and push the portal's main branch. The `share/` folder is an archived test copy, not the current publication target. The `redirect/` directory maintains the retired URL's prebuilt redirect only.
 
 See `planning/portal-deployment.md` for release details. Git saves to H: do not automatically deploy updates.
 

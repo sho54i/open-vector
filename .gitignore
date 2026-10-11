@@ -16,3 +16,7 @@ dist/
 
 # Large logo source art
 planning/logo/501-dr.ai
+
+# Deploy folders (separate Vercel projects, not part of the editor repo)
+redirect/
+share/
