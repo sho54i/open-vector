@@ -29,3 +29,28 @@ Redirect source: `/home/sho/AREA-54/software-MD/DRAW-redirect`. Deploy using `ve
 ```
 
 Local artwork belongs to its browser origin; saved outline JSON can be opened in the main-site editor. The original Git baseline remains archived on H:.
+
+## Local update feed — 2026-09-07
+
+Added public/draw/releases/latest.json and immutable 2026.09.07.1 JSON/ZIP to the
+portal, published directly via Vercel CLI without Git. Current production release:
+https://tensor-portal-fpgnmzkdz-tensor-s4.vercel.app
+(dpl_FfTCwtP71Kjmc63Xw7aQCUUtCruw).
+Hosted editor and portal source pages were unchanged. Retain public/draw/releases/
+in future deployments. The package includes the newer locally accepted text and
+panel features. Public download/install/browser/rollback smoke passed; details in
+planning/local-updater.md. The CLI deployment has not been committed to Git.
+
+## OPEN-VECTOR production release — 2026-09-08
+
+Published approved OPEN-VECTOR branding, theme switching, text/fonts and movable
+panels. Projects listing renamed OPEN-VECTOR; /draw and /draw/index.html remain
+stable. Production: https://tensor-portal-dhohaqs94-tensor-s4.vercel.app
+ID: dpl_FCfEm64TvJZUaFogkw4MPfv6x5zf. Status READY.
+
+Updated local release feed to 2026.09.08.1 (sequence 2026090801), preserving the
+previous package. ESLint passed for Projects. Live Chromium verified Projects
+navigation, logo/credit, theme persistence, text 0→1→Undo 0, Attach/Detach and exact
+hosted/source editor hash. Key-Viz and the previous release return 200; planning
+and tests remain excluded. Live package install/open/rollback smoke passed.
+Published directly through Vercel CLI; Git was not required or pushed.

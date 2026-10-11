@@ -9,3 +9,7 @@ __pycache__/
 *:Zone.Identifier
 .DS_Store
 Thumbs.db
+
+# Local updater backups and generated releases
+.draw-updater/
+dist/

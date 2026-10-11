@@ -1,6 +1,6 @@
 {
-  "version": 28,
-  "filter": "P6",
+  "version": 34,
+  "filter": "P1",
   "cards": [
     {
       "id": "p0-pen",
@@ -381,11 +381,66 @@
       "title": "apple pencil ui + support gen 2 upwards",
       "phase": "P6",
       "status": "shipped",
-      "why": "Improve drawing and editing with Apple Pencil generation 2 onward, including a general UI review for Pencil quality of life.",
+      "why": "",
       "test": "User manually tests on an M1 iPad with a generation 2 Apple Pencil: drawing, selection, editing and tool controls are usable with Pencil; interaction-strength settings produce an observable change and retain their values after reload. Check battery observation if the platform exposes it; otherwise clearly record it as unavailable.",
       "notes": "Implemented 2026-09-07. Pencil & touch inspector: persistent freehand base width, pressure strength, smoothing, and Pencil selection reach. Finger input defaults to ignore for palm protection; optional pan or current tool. Single-pointer ownership keeps other touches from changing active strokes. Larger tablet controls, on-canvas Undo/Redo/Finish, collapsible inspector. Pressure controls uniform whole-stroke width from average pressure; existing editable paths and exports retained. Battery observation and barrel gestures unavailable in this web implementation. Automated Chromium outcomes verified; User hardware verification passed on M1 iPad with Apple Pencil generation 2. Later Pencil models not hardware verified. See planning/apple-pencil.md. User reports all tested features working except the Pencil eraser end; explicitly accepted as-is, with no implementation requested. Brushes and an eraser tool are possible future ideas, not committed scope.",
       "created": "2026-09-07T09:25:33.340Z",
       "updated": "2026-09-07T12:11:49.985920+00:00"
+    },
+    {
+      "id": "c6dq4mke",
+      "title": "text support and font picker",
+      "phase": "P6",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "type a word in blender font or any font",
+      "notes": "User verified text and font picker working. Bundled fonts plus TTF/OTF/WOFF loading, portable outlines and retained editing recipes. See planning/text-panels.md.",
+      "created": "2026-09-07T17:48:26.367Z",
+      "updated": "2026-09-07T20:36:32.682062+00:00"
+    },
+    {
+      "id": "cx0msoze",
+      "title": "re-order tool windows",
+      "phase": "P6",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "re-order a tool like a widget, collapse tool window and re-open, detach tool window then snap back to side-pane. minimise a tool window. add tools drop down to top bar to show hide tools from the side-pane.",
+      "notes": "User verified panel controls working and confirmed the Attach/Detach label fix. Hover title and accessibility label now switch together; opposite arrow states verified. See planning/text-panels.md.",
+      "created": "2026-09-07T17:48:27.873Z",
+      "updated": "2026-09-07T20:36:32.682062+00:00"
+    },
+    {
+      "id": "cfexyn3o",
+      "title": "local updater - patch handler",
+      "phase": "P6",
+      "status": "testing",
+      "why": "Queued from inbox.",
+      "test": "a local smoke test. with later actual usage test.",
+      "notes": "Built local updater using a Vercel HTTPS manifest and ZIP, independent of Git. Windows launcher and Python CLI, checksums, pre-update backups, rollback, interrupted-update recovery and local-edit protection. Twelve local failure/smoke tests plus packaged-editor browser smoke passed. Actual user installation test pending. See planning/local-updater.md.",
+      "created": "2026-09-07T20:17:03.426Z",
+      "updated": "2026-09-07T20:36:32.682062+00:00"
+    },
+    {
+      "id": "cr84porb",
+      "title": "add light dark theme switcher and add branding",
+      "phase": "P1",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "user tests theme switcher",
+      "notes": "Built 2026-09-08. OPEN-VECTOR title and supplied Open-Vector.png logo, embedded for offline/package portability. Persistent light/dark theme button updates interface, canvas board, rulers, grid and selection chrome without changing artwork, SVG exports or Undo history. Small footer credit: miniscule solutions 2026. Chromium theme/reload/artwork preservation and tablet layout checks passed. User verified theme switching and approved branding on 2026-09-08.",
+      "created": "2026-09-08T00:44:30.638Z",
+      "updated": "2026-09-08T00:59:29.377238+00:00"
+    },
+    {
+      "id": "c9vi4e0b",
+      "title": "Update Buttons and Aesthetics",
+      "phase": "P1",
+      "status": "testing",
+      "why": "Queued from inbox.",
+      "test": "button tests, and visual checks",
+      "notes": "Built 2026-10-11 (awaiting user check). New Open-Vector.png logo embedded (transparent padding trimmed, image otherwise unchanged); redundant OPEN-VECTOR header text removed since the logo now carries it. Menus left-aligned beside the logo at the very top of the header; an empty #contextBar slot sits under them for future context-aware widgets. Zoom box collapses to a magnifier: hover expands, tap/click pins open, and it flashes the zoom % for 1.2s on any zoom change. Coordinates box has a crosshair hide/show button, remembered across reloads. Undo, Redo, Finish, Inspector and the theme switch are now 36px icon buttons with hover titles (shortcuts included); Inspector title follows state. Delete tool gained an accessible label. Tests: tests/buttons_aesthetics.py; theme, pencil, precision, snapping, rulers, text-panels, artboards, release smoke pass. Screenshot: planning/buttons-tablet.png. Beauty pass 2026-10-11: panel controls are drawn line icons (chevrons, arrows, pop-out/dock, minimise, close) with unchanged labels; decorative VECTOR STUDIO header label removed; toolbar tools show only the styled tip (duplicate native tooltip removed, tip also on keyboard focus); viewport controls get a soft shadow and a stronger light-theme border. Panel controls now share the title row and fade in on panel hover/focus (mouse/trackpad); touch keeps the always-visible row.",
+      "created": "2026-10-11T11:04:34.934Z",
+      "updated": "2026-10-11T12:30:00.000Z"
     }
   ],
   "inbox": []

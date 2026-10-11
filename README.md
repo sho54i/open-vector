@@ -36,3 +36,7 @@ The portal repository is `sho54i/Tensor-Portal`; its integration checkout is `/h
 For a future accepted version, refresh `public/draw/index.html` and changed vendor assets in the portal repository, verify both Projects links and drawing/undo, then commit and push the portal's main branch. The old sibling `DRAW-share` is an archived test copy, not the current publication target. The `DRAW-redirect` directory maintains the retired URL's prebuilt redirect only.
 
 See `planning/portal-deployment.md` for release details. Git saves to H: do not automatically deploy updates.
+
+## Local updates without Git
+
+Run `Update_DRAW.bat` on Windows, or `python3 scripts/local_updater.py check` then `python3 scripts/local_updater.py apply` from the DRAW folder. Python 3.9+ is required. Releases come from the Vercel portal; backups, rollback and interrupted-update recovery are included. See [UPDATE_README.txt](UPDATE_README.txt) for usage and [planning/local-updater.md](planning/local-updater.md) for release publishing and validation.
