@@ -1,0 +1,69 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<title>open-vector · loading</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#060709;cursor:pointer}
+  svg{width:100%;height:100%;display:block}
+  /* camera: starts pushed-in and tilted, pulls back while settling square */
+  .cam{transform-origin:200px 120px;transform:scale(3) rotate(10deg)}
+  .play .cam{animation:cam 2.2s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes cam{to{transform:scale(1) rotate(0)}}
+  /* pen stroke: trim-path draw-in (pathLength=1) */
+  .stroke{fill:none;stroke:#00F0FF;stroke-width:2.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 0 3px #00F0FF)}
+  .play .stroke{animation:trim 1.3s cubic-bezier(.6,0,.3,1) .15s forwards}
+  @keyframes trim{to{stroke-dashoffset:0}}
+  /* bezier handles + anchors pop in behind the pen */
+  .handle{stroke:#6C7A9C;stroke-width:.8;opacity:0}
+  .knob{fill:#060709;stroke:#6C7A9C;stroke-width:.8;opacity:0}
+  .anchor{fill:#FFB800;opacity:0;transform-box:fill-box;transform-origin:center}
+  .play .handle,.play .knob{animation:fade .35s ease-out forwards}
+  .play .anchor{animation:pop .35s cubic-bezier(.3,1.6,.5,1) forwards}
+  .play .a1{animation-delay:.15s}.play .a2{animation-delay:.6s}.play .a3{animation-delay:1s}.play .a4{animation-delay:1.4s}
+  @keyframes pop{from{opacity:0;transform:scale(0) rotate(45deg)}to{opacity:1;transform:scale(1) rotate(45deg)}}
+  .word{font:700 20px ui-monospace,"Cascadia Mono",Consolas,monospace;letter-spacing:4px;fill:#E0E6ED;opacity:0}
+  .word tspan{fill:#FFB800}
+  .play .word{animation:fade .6s ease-out 1.7s forwards}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.play *{animation-duration:.01s!important;animation-delay:0s!important}}
+</style>
+</head><body>
+<svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid meet" aria-label="open-vector">
+  <g class="cam">
+    <!-- one pen-tool S-curve: 4 anchors, handles on the inner two -->
+    <g class="handle a2"><line x1="120" y1="150" x2="150" y2="70"/><line x1="200" y1="110" x2="170" y2="150"/></g>
+    <g class="handle a3"><line x1="200" y1="110" x2="230" y2="70"/><line x1="280" y1="70" x2="250" y2="150"/></g>
+    <circle class="knob a2" cx="150" cy="70" r="2.2"/><circle class="knob a2" cx="170" cy="150" r="2.2"/>
+    <circle class="knob a3" cx="230" cy="70" r="2.2"/><circle class="knob a3" cx="250" cy="150" r="2.2"/>
+    <path class="stroke" pathLength="1" d="M120 150C150 70 170 150 200 110S250 150 280 70"/>
+    <rect class="anchor a1" x="116" y="146" width="8" height="8"/>
+    <rect class="anchor a2" x="196" y="106" width="8" height="8"/>
+    <rect class="anchor a4" x="276" y="66" width="8" height="8"/>
+    <text class="word" x="200" y="202" text-anchor="middle">OPEN<tspan>·</tspan>VECTOR</text>
+  </g>
+</svg>
+<script>
+  // ?to=<url>  → redirect when done (launcher bumper)
+  // ?loop=1    → replay forever (CRT tile)
+  var q = new URLSearchParams(location.search), to = q.get("to"), loop = q.has("loop");
+  var root = document.documentElement, done = false;
+  function go(){ if (done || !/^https?:\/\//.test(to || "")) return; done = true; location.href = to; }
+  function play(){ root.classList.remove("play"); void root.offsetWidth; root.classList.add("play"); }
+  play();
+  if (loop) setInterval(play, 4200);
+  else { setTimeout(waitThenGo, 2800); document.addEventListener("click", go); }
+
+  // Only leave once the editor answers (EntityOS :8080 serves it).
+  function waitThenGo(){
+    var t0 = Date.now(), word = document.querySelector(".word");
+    (function poll(){
+      if (done) return;
+      fetch(to, { mode: "no-cors", cache: "no-store" }).then(go, function(){
+        var s = (Date.now() - t0) / 1000;
+        if (s > 2) word.style.fontSize = "11px", word.textContent = s > 20 ? "open-vector didn't load — is EntityOS up? (:8080)" : "starting open-vector…";
+        setTimeout(poll, 500);
+      });
+    })();
+  }
+</script>
+</body></html>
