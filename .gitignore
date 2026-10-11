@@ -13,3 +13,6 @@ Thumbs.db
 # Local updater backups and generated releases
 .draw-updater/
 dist/
+
+# Large logo source art
+planning/logo/501-dr.ai
