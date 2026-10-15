@@ -441,6 +441,28 @@
       "notes": "Built 2026-10-11 (awaiting user check). New Open-Vector.png logo embedded (transparent padding trimmed, image otherwise unchanged); redundant OPEN-VECTOR header text removed since the logo now carries it. Menus left-aligned beside the logo at the very top of the header; an empty #contextBar slot sits under them for future context-aware widgets. Zoom box collapses to a magnifier: hover expands, tap/click pins open, and it flashes the zoom % for 1.2s on any zoom change. Coordinates box has a crosshair hide/show button, remembered across reloads. Undo, Redo, Finish, Inspector and the theme switch are now 36px icon buttons with hover titles (shortcuts included); Inspector title follows state. Delete tool gained an accessible label. Tests: tests/buttons_aesthetics.py; theme, pencil, precision, snapping, rulers, text-panels, artboards, release smoke pass. Screenshot: planning/buttons-tablet.png. Beauty pass 2026-10-11: panel controls are drawn line icons (chevrons, arrows, pop-out/dock, minimise, close) with unchanged labels; decorative VECTOR STUDIO header label removed; toolbar tools show only the styled tip (duplicate native tooltip removed, tip also on keyboard focus); viewport controls get a soft shadow and a stronger light-theme border. Panel controls now share the title row and fade in on panel hover/focus (mouse/trackpad); touch keeps the always-visible row. User verified live on 2026-10-11: pen tests, buttons and menus working. Released as 2026.10.11.1.",
       "created": "2026-10-11T11:04:34.934Z",
       "updated": "2026-10-11T13:30:00.000Z"
+    },
+    {
+      "id": "c5aikqvn",
+      "title": "brushes and swatches",
+      "phase": "P1",
+      "status": "queued",
+      "why": "Queued from inbox.",
+      "test": "",
+      "notes": "swatches will also unit a colour picker app.",
+      "created": "2026-10-15T21:43:00.135Z",
+      "updated": "2026-10-15T21:44:01.855Z"
+    },
+    {
+      "id": "cuvhg380",
+      "title": "stroke gradients",
+      "phase": "P1",
+      "status": "queued",
+      "why": "Gradients are fill-only today; the colour swapper's gradient button always targets the fill.",
+      "test": "Put the stroke in front on the colour swapper, press gradient: the stroke renders as a linear gradient on canvas and survives SVG/PNG export, undo and reload; second press toggles it back to solid.",
+      "notes": "Needs stroke fillType/gradient fields, canvas strokeStyle gradient, SVG export <linearGradient> on stroke, inspector stops for stroke. Pairs with the brushes and swatches card (c5aikqvn).",
+      "created": "2026-10-15T21:55:12.226Z",
+      "updated": "2026-10-15T21:55:12.226Z"
     }
   ],
   "inbox": []

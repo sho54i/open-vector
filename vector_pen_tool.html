@@ -172,6 +172,17 @@
         }
         .tool-btn:is(:hover, :focus-visible) .tip { opacity: 0.92; }
         .divider { width: 24px; height: 1px; background: var(--border-color); margin: 4px 0; }
+        .swapper { position: relative; width: 38px; height: 38px; flex: none; }
+        .swatch { position: absolute; width: 24px; height: 24px; padding: 0; border: 1px solid var(--border-color); border-radius: 2px; cursor: pointer; background: var(--sw, transparent); }
+        .swatch.fill { left: 0; top: 0; }
+        .swatch.stroke { right: 0; bottom: 0; background: transparent; box-shadow: inset 0 0 0 5px var(--sw, transparent), inset 0 0 0 6px var(--border-color); }
+        .swapper[data-focus="fill"] .swatch.fill, .swapper[data-focus="stroke"] .swatch.stroke { z-index: 1; outline: 1px solid var(--accent-gold); }
+        .swatch.none { --sw: #fff; background-image: linear-gradient(to top right, transparent 46%, var(--danger) 46% 54%, transparent 54%); }
+        .swatch.stroke.none { background-color: var(--bg-panel); }
+        .swap-mini { display: grid; grid-template-columns: 16px 16px; gap: 3px; }
+        .swap-mini button { width: 16px; height: 16px; padding: 0; border: 1px solid transparent; border-radius: 2px; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .swap-mini button:hover { border-color: var(--border-color); color: var(--text-primary); }
+        .swap-mini svg { width: 12px; height: 12px; }
 
         .viewport {
             position: relative;
@@ -563,6 +574,17 @@
                 <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                 <span class="tip">Delete <span class="kbd">Del</span></span>
             </button>
+            <div class="divider"></div>
+            <div class="swapper" id="swapper" data-focus="fill">
+                <button type="button" class="swatch fill" data-swatch="fill" title="Fill (click front to pick)" aria-label="Fill colour"></button>
+                <button type="button" class="swatch stroke" data-swatch="stroke" title="Stroke (click front to pick)" aria-label="Stroke colour"></button>
+            </div>
+            <div class="swap-mini">
+                <button type="button" data-swap="black" title="Black / white" aria-label="Black or white"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" fill="currentColor"/></svg></button>
+                <button type="button" data-swap="last" title="Last used colour" aria-label="Last used colour"><svg viewBox="0 0 12 12"><rect id="swapLastChip" x="1" y="1" width="10" height="10" stroke="currentColor" fill="none"/></svg></button>
+                <button type="button" data-swap="gradient" title="Linear gradient fill" aria-label="Apply gradient"><svg viewBox="0 0 12 12"><defs><linearGradient id="swapGradIcon"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset="1" stop-color="currentColor"/></linearGradient></defs><rect x="1" y="1" width="10" height="10" fill="url(#swapGradIcon)" stroke="currentColor"/></svg></button>
+                <button type="button" data-swap="none" title="None on front (fill or stroke)" aria-label="Cancel selected"><svg viewBox="0 0 12 12" fill="none" stroke="var(--danger)" stroke-width="1.5"><path d="M2 10L10 2"/></svg></button>
+            </div>
         </aside>
 
         <main class="viewport" id="viewport" tabindex="0">
@@ -1093,7 +1115,7 @@
                 closed: false,
                 fillRule: 'nonzero',
                 points: [],
-                stroke: strokeColorInput.value,
+                stroke: currentStroke(),
                 strokeWidth: Number(strokeWidthInput.value) || 2,
                 fill: fillColorInput.value,
                 enableFill: !!enableFillInput.checked,
@@ -2542,6 +2564,7 @@
             const g = normalizeGradient(style && style.gradient, style && style.fill, style && style.stroke);
             if (!fieldFocused(gradAInput) && g.stops[0]) gradAInput.value = g.stops[0].color;
             if (!fieldFocused(gradBInput) && g.stops[1]) gradBInput.value = g.stops[g.stops.length - 1].color;
+            renderSwapper();
         }
         function updateInspector() {
             if (window.drawTextReady) syncTextPanel();
@@ -2554,7 +2577,7 @@
                 syncAppearanceFields(p);
             } else {
                 syncAppearanceFields({
-                    stroke: strokeColorInput.value,
+                    stroke: currentStroke(),
                     fill: fillColorInput.value,
                     strokeWidth: strokeWidthInput.value,
                     enableFill: enableFillInput.checked,
@@ -2572,9 +2595,44 @@
             updateHud();
         }
 
+        var swapFocus = 'fill'; // var: syncAppearanceFields may run before this line during init
+        var lastColour = { fill: null, stroke: null }, swapPending = { fill: null, stroke: null };
+        // Visible colour of a target, or null when it's off (fill disabled / stroke transparent).
+        function shownColour(t) {
+            if (t === 'fill') return enableFillInput.checked ? (normalizeHex(fillColorInput.value) || null) : null;
+            return normalizeHex(currentStroke());
+        }
+        function notePrevColour(t) {
+            const prev = swapPending[t];
+            if (prev && prev !== shownColour(t)) lastColour[t] = prev;
+            swapPending[t] = shownColour(t);
+            renderSwapper();
+        }
+        function setSwapColour(t, hex) {
+            const cur = shownColour(t);
+            if (cur && cur !== hex) lastColour[t] = cur;
+            if (t === 'fill') applyAppearanceToSelection(hex ? { fill: hex, enableFill: true, fillType: 'solid' } : { enableFill: false, fillType: 'solid' });
+            else applyAppearanceToSelection({ stroke: hex || 'transparent' });
+        }
+        function renderSwapper() {
+            const box = document.getElementById('swapper');
+            if (!box) return;
+            box.dataset.focus = swapFocus;
+            box.querySelectorAll('[data-swatch]').forEach(el => {
+                const c = shownColour(el.dataset.swatch);
+                el.classList.toggle('none', !c);
+                el.style.setProperty('--sw', c || '');
+                el.style.backgroundImage = el.dataset.swatch === 'fill' && c && enableGradInput.checked
+                    ? `linear-gradient(to right, ${gradAInput.value}, ${gradBInput.value})` : '';
+            });
+            const chip = document.getElementById('swapLastChip'), last = lastColour[swapFocus];
+            chip.setAttribute('fill', last || 'none');
+            chip.parentNode.parentNode.disabled = !last;
+        }
+        function currentStroke() { return strokeHexInput.value === 'transparent' ? 'transparent' : strokeColorInput.value; }
         function applyAppearanceToSelection(overrides) {
             const style = Object.assign({
-                stroke: normalizeHex(strokeColorInput.value) || strokeColorInput.value,
+                stroke: normalizeHex(currentStroke()) || currentStroke(),
                 strokeWidth: parseWeight(strokeWidthInput.value) ?? 2,
                 fill: normalizeHex(fillColorInput.value) || fillColorInput.value,
                 enableFill: !!enableFillInput.checked,
@@ -4079,6 +4137,31 @@
         }
         bindHexField(strokeHexInput, 'stroke');
         bindHexField(fillHexInput, 'fill');
+        // Colour swapper: the front swatch (fill or stroke) is what the mini buttons act on.
+        [[strokeColorInput, 'stroke'], [strokeHexInput, 'stroke'], [fillColorInput, 'fill'], [fillHexInput, 'fill']].forEach(([el, t]) => {
+            el.addEventListener('focus', () => { swapPending[t] = shownColour(t); });
+            el.addEventListener('change', () => notePrevColour(t));
+        });
+        document.querySelectorAll('[data-swatch]').forEach(b => b.addEventListener('click', () => {
+            const t = b.dataset.swatch;
+            if (swapFocus !== t) { swapFocus = t; renderSwapper(); return; }
+            const input = t === 'fill' ? fillColorInput : strokeColorInput;
+            if (t === 'fill') enableFillInput.checked = true;
+            swapPending[t] = shownColour(t);
+            try { input.showPicker(); } catch (_) { input.click(); }
+        }));
+        document.querySelectorAll('[data-swap]').forEach(b => b.addEventListener('click', () => {
+            const t = swapFocus, cur = shownColour(t), act = b.dataset.swap;
+            if (act === 'gradient') {
+                // ponytail: gradients are fill-only in this editor, so this always targets the fill
+                swapFocus = 'fill';
+                enableGradInput.checked = !enableGradInput.checked;
+                applyAppearanceToSelection({ enableFill: true, fillType: enableGradInput.checked ? 'linear' : 'solid' });
+            } else if (act === 'none') setSwapColour(t, null);
+            else if (act === 'black') setSwapColour(t, cur === '#000000' ? '#ffffff' : '#000000');
+            else if (lastColour[t]) setSwapColour(t, lastColour[t]);
+            pushHistory();
+        }));
         strokeWidthNum.addEventListener('input', () => { if (parseWeight(strokeWidthNum.value) != null) commitWeightField(); });
         strokeWidthNum.addEventListener('change', () => { commitWeightField(); pushHistory(); });
         strokeWidthNum.addEventListener('keydown', (e) => {
