@@ -65,3 +65,14 @@ Checked before deploying: origin/main had nothing newer than the checkout, and t
 previous production build was the 2026-09-08 CLI release. Live checks: exact hash,
 /projects 200, /draw 307 → editor, old package 200, logo, rect 1→Undo 0, zoom collapsed,
 theme switch, no page errors. Published via Vercel CLI; portal Git not committed/pushed.
+
+## Colour swapper + stroke gradients release — 2026-10-16
+
+Editor commit 545e02d copied byte-identical to public/draw/index.html (sha256 95ee1c00…).
+Release feed 2026.10.16.1 (sequence 2026101601) added; earlier packages kept. Portal
+checkout fast-forwarded to origin/main 65333ef (Open3D in Projects) before deploying, so
+that listing is retained. Deployed with `vercel deploy --prod --yes --scope tensor-s4`.
+Live checks: exact hash, /projects 200 (OPEN-VECTOR + Open3D), /draw 307, old packages 200,
+latest.json → 2026.10.16.1; release_smoke.py --manifest (live) passed; hosted editor:
+stroke gradient via swapper, + stop 2→3, SVG sgrad export, Undo, no page errors.
+Portal Git: 200ef63 pushed to sho54i/Tensor-Portal main.
