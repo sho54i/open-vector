@@ -14,6 +14,14 @@ with sync_playwright() as p:
     z=lambda t:sw(t).evaluate("e=>getComputedStyle(e).zIndex")
     assert z('fill')=='1' and z('stroke')!='1','fill starts in front'
     s0=path()['stroke']
+    # Front swatch opens the swapper's own picker, even with the inspector hidden.
+    page.locator('#toggleInspector').click()
+    page.evaluate("window.__picked=[];HTMLInputElement.prototype.showPicker=function(){__picked.push(this.id)};0")
+    sw('fill').click(position={'x':4,'y':4});assert page.evaluate('__picked')==['swapPicker'],page.evaluate('__picked')
+    page.locator('#swapPicker').evaluate("e=>{e.value='#123456';e.dispatchEvent(new Event('input'));e.dispatchEvent(new Event('change'))}")
+    assert path()['fill']=='#123456' and path()['on'],path()
+    sw('stroke').click(position={'x':20,'y':20});assert page.evaluate('__picked')==['swapPicker'],'back swatch only refocuses'
+    sw('fill').click(position={'x':4,'y':4});page.locator('#toggleInspector').click()
     btn=lambda a:page.locator(f'[data-swap="{a}"]').click()
     btn('black');assert path()['fill']=='#000000' and path()['on'],path()
     btn('black');assert path()['fill']=='#ffffff',path()
@@ -28,13 +36,13 @@ with sync_playwright() as p:
     # No-stroke survives an unrelated inspector edit.
     page.fill('#strokeWidthNum','5');page.press('#strokeWidthNum','Enter');assert path()['stroke']=='transparent',path()
     btn('last');assert path()['stroke']==s0
-    btn('gradient');g=page.evaluate("({t:selectedPath.fillType,on:selectedPath.enableFill})")
-    assert g=={'t':'linear','on':True},g;assert z('fill')=='1','gradient brings fill to front'
+    sw('fill').click(position={'x':4,'y':4});btn('gradient');g=page.evaluate("({t:selectedPath.fillType,on:selectedPath.enableFill})")
+    assert g=={'t':'linear','on':True},g;assert z('fill')=='1'
     assert 'linear-gradient' in sw('fill').evaluate("e=>getComputedStyle(e).backgroundImage")
     btn('gradient');assert page.evaluate("selectedPath.fillType")=='solid','second click toggles off'
     btn('gradient')
     page.locator('.toolbar').screenshot(path=str(ROOT/'planning/colour-swapper.png'))
     page.keyboard.press('Control+z');assert page.evaluate('paths[paths.length-1].fillType')=='solid','undo restores'
     assert not errors,errors
-    print('PASS: swapper focus, black/white toggle, last used, none on front, gradient fill toggle, no-stroke persists, undo')
+    print('PASS: front-swatch picker, swapper focus, black/white toggle, last used, none on front, gradient fill toggle, no-stroke persists, undo')
     browser.close()

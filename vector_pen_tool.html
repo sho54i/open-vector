@@ -177,6 +177,15 @@
         .swatch.fill { left: 0; top: 0; }
         .swatch.stroke { right: 0; bottom: 0; background: transparent; box-shadow: inset 0 0 0 5px var(--sw, transparent), inset 0 0 0 6px var(--border-color); }
         .swapper[data-focus="fill"] .swatch.fill, .swapper[data-focus="stroke"] .swatch.stroke { z-index: 1; outline: 1px solid var(--accent-gold); }
+        .grad-stops { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+        .grad-stop { position: relative; width: 34px; }
+        .grad-stop .stop-del { position: absolute; top: -5px; right: -5px; width: 13px; height: 13px; padding: 0; border: 1px solid var(--border-color); border-radius: 50%; background: var(--bg-panel); color: var(--danger); font-size: 9px; line-height: 10px; cursor: pointer; opacity: 0; }
+        .grad-stop:hover .stop-del, .grad-stop .stop-del:focus-visible { opacity: 1; }
+        .grad-stops .stop-add { width: 26px; height: 26px; padding: 0; border: 1px dashed var(--border-color); border-radius: 2px; background: transparent; color: var(--text-muted); font-size: 15px; line-height: 1; cursor: pointer; }
+        .grad-stops .stop-add:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .swapper .swap-picker { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+        .swatch.fill.grad { background-image: var(--grad); }
+        .swatch.stroke.grad { box-shadow: none; padding: 5px; background: linear-gradient(var(--bg-panel), var(--bg-panel)) content-box, var(--grad) border-box; }
         .swatch.none { --sw: #fff; background-image: linear-gradient(to top right, transparent 46%, var(--danger) 46% 54%, transparent 54%); }
         .swatch.stroke.none { background-color: var(--bg-panel); }
         .swap-mini { display: grid; grid-template-columns: 16px 16px; gap: 3px; }
@@ -578,11 +587,12 @@
             <div class="swapper" id="swapper" data-focus="fill">
                 <button type="button" class="swatch fill" data-swatch="fill" title="Fill (click front to pick)" aria-label="Fill colour"></button>
                 <button type="button" class="swatch stroke" data-swatch="stroke" title="Stroke (click front to pick)" aria-label="Stroke colour"></button>
+                <input type="color" class="swap-picker" id="swapPicker" tabindex="-1" aria-hidden="true">
             </div>
             <div class="swap-mini">
                 <button type="button" data-swap="black" title="Black / white" aria-label="Black or white"><svg viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" fill="currentColor"/></svg></button>
                 <button type="button" data-swap="last" title="Last used colour" aria-label="Last used colour"><svg viewBox="0 0 12 12"><rect id="swapLastChip" x="1" y="1" width="10" height="10" stroke="currentColor" fill="none"/></svg></button>
-                <button type="button" data-swap="gradient" title="Linear gradient fill" aria-label="Apply gradient"><svg viewBox="0 0 12 12"><defs><linearGradient id="swapGradIcon"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset="1" stop-color="currentColor"/></linearGradient></defs><rect x="1" y="1" width="10" height="10" fill="url(#swapGradIcon)" stroke="currentColor"/></svg></button>
+                <button type="button" data-swap="gradient" title="Gradient on front (fill or stroke)" aria-label="Apply gradient"><svg viewBox="0 0 12 12"><defs><linearGradient id="swapGradIcon"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset="1" stop-color="currentColor"/></linearGradient></defs><rect x="1" y="1" width="10" height="10" fill="url(#swapGradIcon)" stroke="currentColor"/></svg></button>
                 <button type="button" data-swap="none" title="None on front (fill or stroke)" aria-label="Cancel selected"><svg viewBox="0 0 12 12" fill="none" stroke="var(--danger)" stroke-width="1.5"><path d="M2 10L10 2"/></svg></button>
             </div>
         </aside>
@@ -732,16 +742,9 @@
                 </div>
                 <label class="row-check"><span>Enable Fill</span><input type="checkbox" id="enableFill"></label>
                 <label class="row-check"><span>Linear Gradient</span><input type="checkbox" id="enableGrad"></label>
-                <div id="gradFields" class="prop-grid" style="margin-top:8px; display:none;">
-                    <div class="prop-field">
-                        <span class="prop-label">STOP A</span>
-                        <input type="color" id="gradA" class="prop-color" value="#FFB800">
-                    </div>
-                    <div class="prop-field">
-                        <span class="prop-label">STOP B</span>
-                        <input type="color" id="gradB" class="prop-color" value="#00F0FF">
-                    </div>
-                </div>
+                <div id="gradFields" class="grad-stops" data-target="fill" style="display:none;"></div>
+                <label class="row-check"><span>Stroke Gradient</span><input type="checkbox" id="enableStrokeGrad"></label>
+                <div id="strokeGradFields" class="grad-stops" data-target="stroke" style="display:none;"></div>
                 <div class="prop-grid" style="margin-top:10px;">
                     <div class="prop-field">
                         <span class="prop-label">CAP</span>
@@ -911,8 +914,14 @@
         const enableFillInput = document.getElementById('enableFill');
         const enableGradInput = document.getElementById('enableGrad');
         const gradFields = document.getElementById('gradFields');
-        const gradAInput = document.getElementById('gradA');
-        const gradBInput = document.getElementById('gradB');
+        const enableStrokeGradInput = document.getElementById('enableStrokeGrad');
+        const strokeGradFields = document.getElementById('strokeGradFields');
+        // Inspector gradient state per target; the stop lists render from it. Keeps the
+        // synced gradient's x1..y2 so editing stops doesn't reset an imported direction.
+        const gradState = { fill: normalizeGradient(null, '#ffb800', '#00f0ff'), stroke: normalizeGradient(null, '#00f0ff', '#ffb800') };
+        const gradCopy = t => JSON.parse(JSON.stringify(gradState[t]));
+        const strokeGradFromInputs = () => gradCopy('stroke');
+        const cssGrad = t => `linear-gradient(to right, ${gradState[t].stops.map(s => `${s.color} ${Math.round(s.offset * 100)}%`).join(', ')})`;
         const strokeCapInput = document.getElementById('strokeCap');
         const strokeJoinInput = document.getElementById('strokeJoin');
         const strokeDashInput = document.getElementById('strokeDash');
@@ -1125,7 +1134,9 @@
                 fillType: (enableGradInput && enableGradInput.checked) ? 'linear' : 'solid',
                 gradient: (enableGradInput && enableGradInput.checked)
                     ? normalizeGradient(null, fillColorInput && fillColorInput.value, strokeColorInput && strokeColorInput.value)
-                    : null
+                    : null,
+                strokeType: (enableStrokeGradInput && enableStrokeGradInput.checked) ? 'linear' : 'solid',
+                strokeGradient: (enableStrokeGradInput && enableStrokeGradInput.checked) ? normalizeGradient(strokeGradFromInputs()) : null
             };
         }
         function createPoint(x, y) {
@@ -1171,7 +1182,9 @@
                 strokeJoin: normalizeJoin(path.strokeJoin != null ? path.strokeJoin : p.strokeJoin),
                 strokeDash: parseDash(path.strokeDash != null ? path.strokeDash : p.strokeDash),
                 fillType: path.fillType === 'linear' ? 'linear' : 'solid',
-                gradient: path.gradient ? normalizeGradient(path.gradient, path.fill, path.stroke) : null
+                gradient: path.gradient ? normalizeGradient(path.gradient, path.fill, path.stroke) : null,
+                strokeType: path.strokeType === 'linear' ? 'linear' : 'solid',
+                strokeGradient: path.strokeGradient ? normalizeGradient(path.strokeGradient, path.stroke, path.fill) : null
             });
             return p;
         }
@@ -1331,6 +1344,23 @@
             for (const s of g.stops) {
                 try { lg.addColorStop(s.offset, s.color); } catch (e) {}
             }
+            return lg;
+        }
+        function usesLinearStroke(path) {
+            return !!(path && path.strokeType === 'linear' && path.stroke !== 'transparent');
+        }
+        // World-space gradient line from the bbox-relative x1..y2. A straight line has a
+        // zero-size axis, so fall back to the bbox diagonal (the old SVG objectBoundingBox trap).
+        function gradientLine(path, g) {
+            const b = pathBounds(path);
+            const l = { x1: b.minX + b.width * g.x1, y1: b.minY + b.height * g.y1, x2: b.minX + b.width * g.x2, y2: b.minY + b.height * g.y2 };
+            return Math.hypot(l.x2 - l.x1, l.y2 - l.y1) > 1e-6 ? l : { x1: b.minX, y1: b.minY, x2: b.minX + b.width, y2: b.minY + b.height };
+        }
+        function canvasStrokeFor(path) {
+            if (!usesLinearStroke(path)) return path.stroke || '#00F0FF';
+            const g = normalizeGradient(path.strokeGradient, path.stroke, path.fill), l = gradientLine(path, g);
+            const lg = ctx.createLinearGradient(l.x1, l.y1, l.x2, l.y2);
+            for (const s of g.stops) { try { lg.addColorStop(s.offset, s.color); } catch (e) {} }
             return lg;
         }
         function fieldFocused(el) { return !!el && document.activeElement === el; }
@@ -2278,7 +2308,7 @@
                         : { kind: 'solid', color: path.fill || '#FFB800' };
                     if (isSelectedPath(path) || !lastCanvasFill) lastCanvasFill = fillInfo;
                 }
-                ctx.strokeStyle = path.stroke || '#00F0FF';
+                ctx.strokeStyle = canvasStrokeFor(path);
                 ctx.lineWidth = (path.strokeWidth || 2) / 1;
                 ctx.lineCap = normalizeCap(path.strokeCap);
                 ctx.lineJoin = normalizeJoin(path.strokeJoin);
@@ -2478,7 +2508,10 @@
                 strokeCap: normalizeCap(style && style.strokeCap),
                 strokeJoin: normalizeJoin(style && style.strokeJoin),
                 strokeDash: parseDash(style && style.strokeDash),
-                fillType, gradient
+                fillType, gradient,
+                strokeType: (style && style.strokeType) === 'linear' ? 'linear' : 'solid',
+                strokeGradient: style && style.strokeGradient ? normalizeGradient(style.strokeGradient, stroke, fill)
+                    : ((style && style.strokeType) === 'linear' ? normalizeGradient(null, stroke, fill) : null)
             };
         }
         function appearanceOfPath(path) { return appearanceFrom(path); }
@@ -2544,6 +2577,28 @@
             return eyedropFromPath(path);
         }
 
+        function mixHex(a, b, t) {
+            const ch = (h, i) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
+            return '#' + [0, 1, 2].map(i => Math.round(ch(a, i) + (ch(b, i) - ch(a, i)) * t).toString(16).padStart(2, '0')).join('');
+        }
+        // New stop goes in the middle of the widest gap, coloured to match the gradient there.
+        function addStop(stops) {
+            let k = 0;
+            for (let i = 1; i < stops.length - 1; i++) if (stops[i + 1].offset - stops[i].offset > stops[k + 1].offset - stops[k].offset) k = i;
+            const a = stops[k], b = stops[k + 1];
+            stops.splice(k + 1, 0, { offset: (a.offset + b.offset) / 2, color: mixHex(a.color, b.color, 0.5) });
+        }
+        function renderStops(t) {
+            const box = t === 'fill' ? gradFields : strokeGradFields, stops = gradState[t].stops;
+            const inputs = box.querySelectorAll('input[data-stop]');
+            if (inputs.length === stops.length) {   // same count: update in place so an open picker survives
+                inputs.forEach((el, i) => { if (!fieldFocused(el)) el.value = stops[i].color; });
+                return;
+            }
+            box.innerHTML = stops.map((s, i) => `<span class="grad-stop"><input type="color" class="prop-color" data-stop="${i}" value="${s.color}" aria-label="Stop ${i + 1} at ${Math.round(s.offset * 100)}%" title="${Math.round(s.offset * 100)}%">`
+                + (stops.length > 2 ? `<button type="button" class="stop-del" data-del="${i}" title="Remove stop" aria-label="Remove stop ${i + 1}">×</button>` : '') + `</span>`).join('')
+                + `<button type="button" class="stop-add" title="Add gradient colour" aria-label="Add gradient colour">+</button>`;
+        }
         function syncAppearanceFields(style) {
             const stroke = normalizeHex(style && style.stroke) || (style && style.stroke) || '#00F0FF';
             const fill = normalizeHex(style && style.fill) || (style && style.fill) || '#FFB800';
@@ -2562,8 +2617,15 @@
             enableGradInput.checked = linear;
             gradFields.style.display = linear ? '' : 'none';
             const g = normalizeGradient(style && style.gradient, style && style.fill, style && style.stroke);
-            if (!fieldFocused(gradAInput) && g.stops[0]) gradAInput.value = g.stops[0].color;
-            if (!fieldFocused(gradBInput) && g.stops[1]) gradBInput.value = g.stops[g.stops.length - 1].color;
+            gradState.fill = g;
+            renderStops('fill');
+            const strokeLinear = (style && style.strokeType) === 'linear';
+            enableStrokeGradInput.checked = strokeLinear;
+            strokeGradFields.style.display = strokeLinear ? '' : 'none';
+            if (style && style.strokeGradient) {
+                gradState.stroke = normalizeGradient(style.strokeGradient, style.stroke, style.fill);
+            }
+            renderStops('stroke');
             renderSwapper();
         }
         function updateInspector() {
@@ -2585,7 +2647,9 @@
                     strokeJoin: strokeJoinInput.value,
                     strokeDash: strokeDashInput.value,
                     fillType: enableGradInput.checked ? 'linear' : 'solid',
-                    gradient: enableGradInput.checked ? { stops: [{ offset: 0, color: gradAInput.value }, { offset: 1, color: gradBInput.value }] } : null
+                    gradient: enableGradInput.checked ? gradCopy('fill') : null,
+                    strokeType: enableStrokeGradInput.checked ? 'linear' : 'solid',
+                    strokeGradient: enableStrokeGradInput.checked ? strokeGradFromInputs() : null
                 });
             }
             syncArtboardPanel();
@@ -2612,7 +2676,7 @@
             const cur = shownColour(t);
             if (cur && cur !== hex) lastColour[t] = cur;
             if (t === 'fill') applyAppearanceToSelection(hex ? { fill: hex, enableFill: true, fillType: 'solid' } : { enableFill: false, fillType: 'solid' });
-            else applyAppearanceToSelection({ stroke: hex || 'transparent' });
+            else applyAppearanceToSelection({ stroke: hex || 'transparent', strokeType: 'solid' });
         }
         function renderSwapper() {
             const box = document.getElementById('swapper');
@@ -2622,8 +2686,9 @@
                 const c = shownColour(el.dataset.swatch);
                 el.classList.toggle('none', !c);
                 el.style.setProperty('--sw', c || '');
-                el.style.backgroundImage = el.dataset.swatch === 'fill' && c && enableGradInput.checked
-                    ? `linear-gradient(to right, ${gradAInput.value}, ${gradBInput.value})` : '';
+                const fill = el.dataset.swatch === 'fill', grad = c && (fill ? enableGradInput.checked : enableStrokeGradInput.checked);
+                el.classList.toggle('grad', !!grad);
+                el.style.setProperty('--grad', grad ? cssGrad(el.dataset.swatch) : '');
             });
             const chip = document.getElementById('swapLastChip'), last = lastColour[swapFocus];
             chip.setAttribute('fill', last || 'none');
@@ -2641,8 +2706,10 @@
                 strokeDash: parseDash(strokeDashInput.value),
                 fillType: enableGradInput.checked ? 'linear' : 'solid',
                 gradient: enableGradInput.checked
-                    ? { type: 'linear', stops: [{ offset: 0, color: gradAInput.value }, { offset: 1, color: gradBInput.value }] }
-                    : null
+                    ? gradCopy('fill')
+                    : null,
+                strokeType: enableStrokeGradInput.checked ? 'linear' : 'solid',
+                strokeGradient: enableStrokeGradInput.checked ? strokeGradFromInputs() : null
             }, overrides || {});
             const next = appearanceFrom(style);
             const list = pathSelection();
@@ -3284,7 +3351,14 @@
                     defs.push(`    <linearGradient id="${id}" gradientUnits="objectBoundingBox" x1="${g.x1}" y1="${g.y1}" x2="${g.x2}" y2="${g.y2}">\n${stops}\n    </linearGradient>`);
                     fill = `url(#${id})`;
                 }
-                const stroke = path.stroke || '#00F0FF';
+                let stroke = path.stroke || '#00F0FF';
+                if (usesLinearStroke(path)) {
+                    const g = normalizeGradient(path.strokeGradient, path.stroke, path.fill), l = gradientLine(path, g);
+                    const id = 'sgrad-' + path.id;
+                    const stops = g.stops.map(s => `      <stop offset="${s.offset}" stop-color="${s.color}"/>`).join('\n');
+                    defs.push(`    <linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${l.x1 - b.minX}" y1="${l.y1 - b.minY}" x2="${l.x2 - b.minX}" y2="${l.y2 - b.minY}">\n${stops}\n    </linearGradient>`);
+                    stroke = `url(#${id})`;
+                }
                 const width = path.strokeWidth || 2;
                 const cap = normalizeCap(path.strokeCap);
                 const join = normalizeJoin(path.strokeJoin);
@@ -3310,6 +3384,8 @@
                     strokeCap: p.strokeCap, strokeJoin: p.strokeJoin, strokeDash: parseDash(p.strokeDash),
                     fillType: p.fillType || 'solid',
                     gradient: p.gradient ? normalizeGradient(p.gradient, p.fill, p.stroke) : null,
+                    strokeType: p.strokeType || 'solid',
+                    strokeGradient: p.strokeGradient ? normalizeGradient(p.strokeGradient, p.stroke, p.fill) : null,
                     fillRule: p.fillRule || 'nonzero',
                     points: p.points.map(clonePoint)
                 }))
@@ -3337,6 +3413,8 @@
                 path.strokeDash = parseDash(p.strokeDash);
                 path.fillType = p.fillType === 'linear' ? 'linear' : 'solid';
                 path.gradient = p.gradient ? normalizeGradient(p.gradient, p.fill, p.stroke) : null;
+                path.strokeType = p.strokeType === 'linear' ? 'linear' : 'solid';
+                path.strokeGradient = p.strokeGradient ? normalizeGradient(p.strokeGradient, p.stroke, p.fill) : null;
                 path.points = (p.points || []).map(pt => {
                     const np = createPoint(Number(pt.x) || 0, Number(pt.y) || 0);
                     const coordinate = (v, fallback) => v != null && Number.isFinite(Number(v)) ? Number(v) : fallback;
@@ -3538,15 +3616,20 @@
                     path.stroke=node.strokeColor ? node.strokeColor.toCSS(true) : 'transparent';
                     path.strokeWidth=node.strokeWidth || 0;
                     path.strokeCap=normalizeCap(node.strokeCap);path.strokeJoin=normalizeJoin(node.strokeJoin);path.strokeDash=parseDash(node.dashArray);
-                    path.fillType='solid';path.gradient=null;
-                    if (node.strokeColor?.type==='gradient') throw Error('Gradient strokes are not supported.');
-                    if (node.fillColor?.type==='gradient') {
-                        const color=node.fillColor;
+                    path.fillType='solid';path.gradient=null;path.strokeType='solid';path.strokeGradient=null;
+                    const importGradient=color=>{
                         if (color.gradient.radial) throw Error('Radial gradients are not supported.');
                         if (color.alpha !== 1 || color.gradient.stops.some(s => s.color.alpha !== 1)) throw Error('Use opaque gradient stops before importing.');
                         const b=pathBounds(path),w=b.width||1,h=b.height||1;
+                        return {type:'linear',x1:(color.origin.x-b.minX)/w,y1:(color.origin.y-b.minY)/h,x2:(color.destination.x-b.minX)/w,y2:(color.destination.y-b.minY)/h,stops:color.gradient.stops.map(s=>({offset:s.offset,color:s.color.toCSS(true)}))};
+                    };
+                    if (node.strokeColor?.type==='gradient') {
+                        path.strokeType='linear';path.strokeGradient=importGradient(node.strokeColor);
+                        path.stroke=path.strokeGradient.stops[0]?.color || '#000000';
+                    }
+                    if (node.fillColor?.type==='gradient') {
                         path.fillType='linear';
-                        path.gradient={type:'linear',x1:(color.origin.x-b.minX)/w,y1:(color.origin.y-b.minY)/h,x2:(color.destination.x-b.minX)/w,y2:(color.destination.y-b.minY)/h,stops:color.gradient.stops.map(s=>({offset:s.offset,color:s.color.toCSS(true)}))};
+                        path.gradient=importGradient(node.fillColor);
                         path.fill=path.gradient.stops[0]?.color || '#000000';
                     } else path.fill=node.fillColor ? node.fillColor.toCSS(true) : '#000000';
                     result.push(path);
@@ -4145,18 +4228,27 @@
         document.querySelectorAll('[data-swatch]').forEach(b => b.addEventListener('click', () => {
             const t = b.dataset.swatch;
             if (swapFocus !== t) { swapFocus = t; renderSwapper(); return; }
-            const input = t === 'fill' ? fillColorInput : strokeColorInput;
-            if (t === 'fill') enableFillInput.checked = true;
+            const picker = document.getElementById('swapPicker');
             swapPending[t] = shownColour(t);
-            try { input.showPicker(); } catch (_) { input.click(); }
+            picker.value = swapPending[t] || (t === 'fill' ? fillColorInput.value : strokeColorInput.value);
+            try { picker.showPicker(); } catch (_) { picker.click(); }
         }));
+        // Own picker, so it opens even when the inspector/Appearance panel is hidden.
+        // Picking a colour makes the front target solid (replaces a gradient).
+        document.getElementById('swapPicker').addEventListener('input', e => {
+            applyAppearanceToSelection(swapFocus === 'fill'
+                ? { fill: e.target.value, enableFill: true, fillType: 'solid' }
+                : { stroke: e.target.value, strokeType: 'solid' });
+        });
+        document.getElementById('swapPicker').addEventListener('change', () => { notePrevColour(swapFocus); pushHistory(); });
         document.querySelectorAll('[data-swap]').forEach(b => b.addEventListener('click', () => {
             const t = swapFocus, cur = shownColour(t), act = b.dataset.swap;
-            if (act === 'gradient') {
-                // ponytail: gradients are fill-only in this editor, so this always targets the fill
-                swapFocus = 'fill';
+            if (act === 'gradient' && t === 'fill') {
                 enableGradInput.checked = !enableGradInput.checked;
                 applyAppearanceToSelection({ enableFill: true, fillType: enableGradInput.checked ? 'linear' : 'solid' });
+            } else if (act === 'gradient') {
+                enableStrokeGradInput.checked = !enableStrokeGradInput.checked;
+                applyAppearanceToSelection(enableStrokeGradInput.checked && !cur ? { stroke: gradState.stroke.stops[0].color } : null);
             } else if (act === 'none') setSwapColour(t, null);
             else if (act === 'black') setSwapColour(t, cur === '#000000' ? '#ffffff' : '#000000');
             else if (lastColour[t]) setSwapColour(t, lastColour[t]);
@@ -4188,9 +4280,27 @@
             applyAppearanceToSelection();
             pushHistory();
         });
-        [gradAInput, gradBInput].forEach(el => {
-            el.addEventListener('input', () => applyAppearanceToSelection());
-            el.addEventListener('change', pushHistory);
+        enableStrokeGradInput.addEventListener('change', () => {
+            applyAppearanceToSelection(enableStrokeGradInput.checked && currentStroke() === 'transparent' ? { stroke: gradState.stroke.stops[0].color } : null);
+            pushHistory();
+        });
+        document.querySelectorAll('.grad-stops').forEach(box => {
+            const t = box.dataset.target;
+            box.addEventListener('input', e => {
+                const i = Number(e.target.dataset.stop);
+                if (!Number.isInteger(i)) return;
+                gradState[t].stops[i].color = e.target.value;
+                applyAppearanceToSelection();
+            });
+            box.addEventListener('change', e => { if (e.target.dataset.stop != null) pushHistory(); });
+            box.addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                if (btn.classList.contains('stop-add')) addStop(gradState[t].stops);
+                else gradState[t].stops.splice(Number(btn.dataset.del), 1);
+                applyAppearanceToSelection();
+                pushHistory();
+            });
         });
         document.getElementById('addArtboard').addEventListener('click', addArtboard);
         document.getElementById('removeArtboard').addEventListener('click', removeArtboard);
@@ -4497,10 +4607,7 @@
                 const gradient = enabled
                     ? normalizeGradient({ type: 'linear', stops: stops || undefined }, selectedPath && selectedPath.fill, selectedPath && selectedPath.stroke)
                     : null;
-                if (gradient) {
-                    gradAInput.value = gradient.stops[0].color;
-                    gradBInput.value = gradient.stops[gradient.stops.length - 1].color;
-                }
+                if (gradient) gradState.fill = gradient;
                 applyAppearanceToSelection({
                     enableFill: enabled ? true : !!enableFillInput.checked,
                     fillType: enabled ? 'linear' : 'solid',

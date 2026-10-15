@@ -457,12 +457,23 @@
       "id": "cuvhg380",
       "title": "stroke gradients",
       "phase": "P1",
-      "status": "queued",
-      "why": "Gradients are fill-only today; the colour swapper's gradient button always targets the fill.",
-      "test": "Put the stroke in front on the colour swapper, press gradient: the stroke renders as a linear gradient on canvas and survives SVG/PNG export, undo and reload; second press toggles it back to solid.",
-      "notes": "Needs stroke fillType/gradient fields, canvas strokeStyle gradient, SVG export <linearGradient> on stroke, inspector stops for stroke. Pairs with the brushes and swatches card (c5aikqvn).",
+      "status": "testing",
+      "why": "Gradients were fill-only; the colour swapper's gradient button always targeted the fill.",
+      "test": "Put the stroke in front on the colour swapper, press gradient: the stroke renders as a linear gradient on canvas and survives SVG/PNG export, undo and reload; second press toggles it back to solid. Use + in the inspector to add gradient colours, × to remove. Click the front swapper swatch: colour picker opens (also with the inspector hidden).",
+      "notes": "Implemented 2026-10-15: path.strokeType + strokeGradient (mirrors fill gradients). Swapper gradient button acts on the front swatch; inspector Stroke Gradient checkbox. Multi-stop: inspector stop lists (fill + stroke) with + (adds mid-widest-gap, blended colour) and × (when >2). Front swapper swatch opens its own picker; picking makes that target solid. Canvas, SVG export (userSpaceOnUse so straight lines paint), PNG (via SVG), SVG re-import, save/load, undo. Automated: tests/stroke_gradient.py, tests/colour_swapper.py. Awaiting user verification. Pairs with brushes and swatches (c5aikqvn) and blend tool (ceip7mb9).",
       "created": "2026-10-15T21:55:12.226Z",
-      "updated": "2026-10-15T21:55:12.226Z"
+      "updated": "2026-10-15T22:24:41.568Z"
+    },
+    {
+      "id": "ceip7mb9",
+      "title": "blend tool",
+      "phase": "P1",
+      "status": "queued",
+      "why": "Queued from inbox.",
+      "test": "",
+      "notes": "tool that assists in duplicating and controlling splines/shapes. can be combined with colour to make gradient effects.",
+      "created": "2026-10-15T22:00:05.082Z",
+      "updated": "2026-10-15T22:02:51.708Z"
     }
   ],
   "inbox": []
