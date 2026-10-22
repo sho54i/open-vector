@@ -1,6 +1,6 @@
 {
-  "version": 35,
-  "filter": "P1",
+  "version": 42,
+  "filter": "all",
   "cards": [
     {
       "id": "p0-pen",
@@ -413,12 +413,12 @@
       "id": "cfexyn3o",
       "title": "local updater - patch handler",
       "phase": "P6",
-      "status": "testing",
+      "status": "shipped",
       "why": "Queued from inbox.",
       "test": "a local smoke test. with later actual usage test.",
       "notes": "Built local updater using a Vercel HTTPS manifest and ZIP, independent of Git. Windows launcher and Python CLI, checksums, pre-update backups, rollback, interrupted-update recovery and local-edit protection. Twelve local failure/smoke tests plus packaged-editor browser smoke passed. Actual user installation test pending. See planning/local-updater.md.",
       "created": "2026-09-07T20:17:03.426Z",
-      "updated": "2026-09-07T20:36:32.682062+00:00"
+      "updated": "2026-10-22T19:02:24.945Z"
     },
     {
       "id": "cr84porb",
@@ -446,34 +446,144 @@
       "id": "c5aikqvn",
       "title": "brushes and swatches",
       "phase": "P1",
-      "status": "queued",
+      "status": "shipped",
       "why": "Queued from inbox.",
-      "test": "",
-      "notes": "swatches will also unit a colour picker app.",
+      "test": "Apply swatches to front fill/stroke target; apply/save/remove brush presets; verify Undo, reload and library JSON export/import. Check new Pencil strokes and multi-selection appearance preservation.",
+      "notes": "swatches will also unit a colour picker app. Implemented 2026-10-21: Brushes and swatches panel, solid colour library, uniform-width stroke presets (width/cap/join/dash), custom names, removal, browser persistence and validated additive JSON import/export. Applies only relevant properties to unlocked visible selection, preserving other styles; one-step Undo. Brush width also sets Pencil base width. Automated library, swapper, gradient, Pencil, Apple Pencil and panel regressions passed. User review pending. Colour-picker app can consume the documented JSON format; direct app integration and variable-width/art brushes are not implemented. See planning/brushes-swatches.md.",
       "created": "2026-10-15T21:43:00.135Z",
-      "updated": "2026-10-15T21:44:01.855Z"
-    },
-    {
-      "id": "cuvhg380",
-      "title": "stroke gradients",
-      "phase": "P1",
-      "status": "testing",
-      "why": "Gradients were fill-only; the colour swapper's gradient button always targeted the fill.",
-      "test": "Put the stroke in front on the colour swapper, press gradient: the stroke renders as a linear gradient on canvas and survives SVG/PNG export, undo and reload; second press toggles it back to solid. Use + in the inspector to add gradient colours, × to remove. Click the front swapper swatch: colour picker opens (also with the inspector hidden).",
-      "notes": "Implemented 2026-10-15: path.strokeType + strokeGradient (mirrors fill gradients). Swapper gradient button acts on the front swatch; inspector Stroke Gradient checkbox. Multi-stop: inspector stop lists (fill + stroke) with + (adds mid-widest-gap, blended colour) and × (when >2). Front swapper swatch opens its own picker; picking makes that target solid. Canvas, SVG export (userSpaceOnUse so straight lines paint), PNG (via SVG), SVG re-import, save/load, undo. Automated: tests/stroke_gradient.py, tests/colour_swapper.py. Awaiting user verification. Pairs with brushes and swatches (c5aikqvn) and blend tool (ceip7mb9).",
-      "created": "2026-10-15T21:55:12.226Z",
-      "updated": "2026-10-15T22:24:41.568Z"
+      "updated": "2026-10-22T08:25:04.523Z"
     },
     {
       "id": "ceip7mb9",
       "title": "blend tool",
       "phase": "P1",
-      "status": "queued",
+      "status": "shipped",
       "why": "Queued from inbox.",
-      "test": "",
-      "notes": "tool that assists in duplicating and controlling splines/shapes. can be combined with colour to make gradient effects.",
+      "test": "Select two compatible paths with V and Shift-click, create intermediate steps, verify shape/colour transitions, edit generated anchors, Undo/Redo, reload and SVG export. Incompatible endpoints must leave the document unchanged.",
+      "notes": "tool that assists in duplicating and controlling splines/shapes. can be combined with colour to make gradient effects. Implemented 2026-10-21: Blend inspector panel with 1–100 steps and optional colour interpolation; editable anchor/Bezier/width interpolation, solid and compatible linear-gradient paints, source preservation and one-step Undo. Requires matching anchor/contour topology; no live linkage, automatic resampling or blend spine. Tests: tests/blend.py plus library, gradient and panel regressions. Awaiting user review. See planning/blend.md.\n\ntool that assists in duplicating and controlling splines/shapes. can be combined with colour to make gradient effects. Implemented 2026-10-21: Blend inspector panel with 1–100 steps and optional colour interpolation; editable anchor/Bezier/width interpolation, solid and compatible linear-gradient paints, source preservation and one-step Undo. Requires matching anchor/contour topology; no live linkage, automatic resampling or blend spine. Tests: tests/blend.py plus library, gradient and panel regressions. Marked shipped in the saved roadmap on 2026-10-21. See planning/blend.md.",
       "created": "2026-10-15T22:00:05.082Z",
-      "updated": "2026-10-15T22:02:51.708Z"
+      "updated": "2026-10-21T22:56:22.092059+00:00"
+    },
+    {
+      "id": "cp52taxv",
+      "title": "reflect tool",
+      "phase": "P2",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Flip selected paths horizontally and vertically; verify custom mirror coordinates, reflected copies, handles, gradients, groups, Undo/Redo, reload and SVG export. Invalid or locked/hidden selections must remain unchanged.",
+      "notes": "Implemented 2026-10-21. Reflect inspector panel with selection-centre or custom X/Y mirror line and optional reflected copies. Mirrors anchors, Bézier handles and gradient directions; copies retain independent groups. Reflected text becomes editable outlines; Undo restores its recipe. Automated tests/reflect.py and precision, blend and text-panel regressions recorded in planning/reflect.md. User/device review pending. Arbitrary-angle axes and interactive axis dragging are outside this version.",
+      "created": "2026-10-21T10:22:58.510Z",
+      "updated": "2026-10-22T08:25:48.579Z"
+    },
+    {
+      "id": "cjkgoo1s",
+      "title": "stroke width tool",
+      "phase": "P3",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Select paths and apply spindle/taper/wave presets; edit width-stop percentages and positions. Check visible thickness, base-weight scaling, gradients, Undo/Redo, reload and JSON/SVG/PNG exports. Uniform restores ordinary strokes.",
+      "notes": "include stroke width profile presets\n\ninclude stroke width profile presets Implemented 2026-10-21: Stroke width inspector panel, presets and 2–32 editable numeric stops (0–400% width). Editable centrelines retained; shared sampled canvas/SVG outline renderer, JSON persistence, visible-outline hit testing and expanded export bounds. Continuous strokes with round joins; dashes restore uniform width. No draggable canvas width handles. Automated tests/stroke_width.py plus seven related regressions passed. Awaiting user review. See planning/stroke-width.md.",
+      "created": "2026-10-21T10:24:13.687Z",
+      "updated": "2026-10-22T08:25:13.914Z"
+    },
+    {
+      "id": "c0tkdhbq",
+      "title": "clipping mask tool",
+      "phase": "P5",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Select artwork and a topmost closed shape; Make mask must hide exterior pixels without destroying paths. Edit mask anchors, move the group, Release, Undo/Redo, duplicate/copy, reload, and export SVG/PNG. Verify holes and rejection of invalid or nested masks.",
+      "notes": "Implemented 2026-10-22. Clipping mask inspector with Make, Release and Edit mask anchors. Topmost closed path clips selected editable artwork; canvas hits respect clipping. Independent copies, JSON/session persistence (including hidden masks), SVG clipPath export/import and PNG export. Automated pixel, geometry, history and guard checks in tests/clipping_mask.py. Ungroup before making masks; no nested or opacity masks. See planning/clipping-mask.md. Awaiting user/device review.",
+      "created": "2026-10-21T22:24:48.765Z",
+      "updated": "2026-10-22T08:25:16.045Z"
+    },
+    {
+      "id": "p3-colour-swapper",
+      "title": "Colour swapper + picker",
+      "phase": "P3",
+      "status": "shipped",
+      "why": "Record completed appearance work from the October release.",
+      "test": "Switch front fill/stroke target, swap paints, apply black/white, last-used colour, gradient and none; verify selected artwork and Undo.",
+      "notes": "Released 2026.10.16.1. Left-toolbar fill/stroke focus swatches, colour picker, black/white, last-used colour, gradient toggle and none-on-front. Tests: tests/colour_swapper.py. Release evidence: planning/portal-deployment.md.",
+      "created": "2026-10-16T00:00:00.000Z",
+      "updated": "2026-10-21T22:56:22.092059+00:00"
+    },
+    {
+      "id": "p3-stroke-grad",
+      "title": "Stroke gradients + multi-stop editor",
+      "phase": "P3",
+      "status": "shipped",
+      "why": "Record completed appearance work from the October release.",
+      "test": "Apply a stroke gradient through the swapper, add a stop (2 → 3), export SVG with stroke gradient and Undo.",
+      "notes": "Released 2026.10.16.1. Stroke gradients and multi-stop gradient editing. Live hosted-editor stop count, SVG sgrad export, Undo and no-page-error checks passed; release smoke passed. Tests: tests/stroke_gradient.py. Release evidence: planning/portal-deployment.md.",
+      "created": "2026-10-16T00:00:00.000Z",
+      "updated": "2026-10-21T22:56:22.092059+00:00"
+    },
+    {
+      "id": "cyb0pf3h",
+      "title": "add various styles",
+      "phase": "P3",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Apply editable drop shadow and Gaussian/horizontal/vertical blur; verify canvas pixels, SVG/PNG, Undo/Redo, reload and copies. Round closed straight corners, drag their Bezier handles with A, and roughen curves with a repeatable seed. Check compound paths, mixed selections and invalid/locked guards.",
+      "notes": "drop shadow,  rounded corner (with anchor handles for closed shapes), roughen edges. gaussian blur + 1 or 2 other blur types.\n\nImplemented 2026-10-22. Styles inspector: editable shadow colour/opacity/offset/softness; Gaussian and two directional blurs; rounded corners become editable Bezier anchors; seeded roughening produces editable anchors. Shared SVG filter rendering for canvas and SVG/PNG, effect margins, JSON/session/history/copy persistence. Tests: tests/styles.py and related regressions. Awaiting user/device review. Rounding is a geometry operation, not a live radius widget; reopen effects with outline JSON (SVG filter import is unsupported). See planning/styles.md.",
+      "created": "2026-10-22T08:36:49.310Z",
+      "updated": "2026-10-22T13:28:17.420Z"
+    },
+    {
+      "id": "cx9tgwvz",
+      "title": "add filters",
+      "phase": "P3",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Apply Pencil sketch, Oil paint and Bubble wrap; verify visible canvas/SVG texture, strength/scale/seed, original geometry, independent shadow/blur composition, Undo/Redo, JSON/reload, copies, PNG and clipping. Invalid or locked selections remain unchanged.",
+      "notes": "add effect and filter overlays for art styles and effects. e.g. pencil sketch, oil paint, bubble wrap etc.\n\nImplemented 2026-10-22: Art filters inspector with three procedural presets, strength, scale and seed; shared SVG/canvas effects pipeline, source-alpha clipping and editable recipes. Preserves geometry, text recipes and other effects. Automated tests/art_filters.py plus Styles, stroke width and clipping regressions passed. SVG filter import remains unsupported; reopen outline JSON. Awaiting user/device review. See planning/art-filters.md.",
+      "created": "2026-10-22T08:36:50.413Z",
+      "updated": "2026-10-22T13:28:27.846Z"
+    },
+    {
+      "id": "ct8ebh0i",
+      "title": "document setup and colour modes",
+      "phase": "P6",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Apply units, resolution and board dimensions; verify unchanged artwork, CMYK fill/stroke approximation, invalid values, Undo/Redo, new document, JSON and reload.",
+      "notes": "settings, RGB, CMYK. this can go in a document setup style page or box where similar settings can live. \n\nsettings, RGB, CMYK. this can go in a document setup style page or box where similar settings can live.\n\nImplemented 2026-10-22: Document setup panel: name, RGB/CMYK mode, px/mm/in setup units, resolution and active-board dimensions; one-step Undo, JSON and session persistence. CMYK percentages apply solid fill/stroke via an explicitly labelled RGB approximation; no ICC profiles, print separations or retained CMYK recipes. SVG/PNG stay RGB. See planning/next-three.md and tests/next_three.py. User/device review pending.\n\nUI revised: Document setup moved out of the inspector into its own File hover submenu, with click/tap and keyboard access.",
+      "created": "2026-10-22T08:36:51.603Z",
+      "updated": "2026-10-22T15:56:48.334Z"
+    },
+    {
+      "id": "cjriuz69",
+      "title": "anchor point management (pen)",
+      "phase": "P1",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Click Add/Remove/Convert on straight and curved paths; verify geometry, compound contours, minimum counts, locked guards, Undo/Redo and reload.",
+      "notes": "- add an add/remove anchor point, - convert anchor point. access is via a long press on the pen tool.\n\n- add an add/remove anchor point, - convert anchor point.\n\nImplemented 2026-10-22: Explicit Add, Remove and Convert anchor tools. Shape-preserving cubic splitting, smooth/corner conversion, contour minimums, locked/hidden guards, text-outline recipe invalidation and history/session persistence. See planning/next-three.md and tests/next_three.py. User/device review pending.\n\nUI revised: anchor variants now live in the Pen long-press flyout, with four custom SVG toolbar icons and matching canvas cursors; separate anchor panel removed.\n\n- add an add/remove anchor point, - convert anchor point. access is via a long press on the pen tool.\n\n- add an add/remove anchor point, - convert anchor point.\n\nImplemented 2026-10-22: Explicit Add, Remove and Convert anchor tools. Shape-preserving cubic splitting, smooth/corner conversion, contour minimums, locked/hidden guards, text-outline recipe invalidation and history/session persistence. See planning/next-three.md and tests/next_three.py. User/device review pending.\n\nUI revised: anchor variants now live in the Pen long-press flyout, with four custom SVG toolbar icons and matching canvas cursors; separate anchor panel removed.\n\nConvert follow-up: drag anchors for mirrored handles and handles independently; Shift constraints, cancellation and history verified. Single angled-delta icon/cursor with aligned hotspot. User accepted 2026-10-22: all good now. Tests: tests/convert_anchor.py, next_three.py and pen_menu.py.",
+      "created": "2026-10-22T09:06:14.828Z",
+      "updated": "2026-10-22T16:26:07.472813+00:00"
+    },
+    {
+      "id": "c46iw5mp",
+      "title": "alt and shift key support",
+      "phase": "P1",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Exercise Shift pen/handles/aligned movement, Alt copy and centred scaling; verify original geometry, groups, cancellation, one-step Undo, Ctrl+F stacking and field isolation.",
+      "notes": "- user can use shift to lock to preset angles and alignment. - and alt for in-place transform scaling. - make: hold alt and drag to copy. - assign 'ctrl + f' to paste in  place.\n\n- user can use shift to lock to preset angles and alignment. - and alt for in-place transform scaling. - make: hold alt and drag to copy. - assign 'ctrl + f' to paste in  place.\n\nImplemented 2026-10-22: Shift constrains pen/handles to 45 degrees and movement to horizontal/vertical; existing proportional shape/scale and 15-degree rotation retained. Alt scales around centre or drags independent copies with one-step Undo and cancellation. Ctrl/Cmd+F now pastes in place; Shift+V alias retained. See planning/next-three.md and tests/next_three.py. User/device review pending.\n\nUI revised: removed the separate Paste in Place menu item; Ctrl/Cmd+F and Ctrl/Cmd+Shift+V now use Paste in Front (same coordinates, top of stack).",
+      "created": "2026-10-22T09:08:13.328Z",
+      "updated": "2026-10-22T15:56:05.831Z"
+    },
+    {
+      "id": "c8g9lqt2",
+      "title": "vector assistant review",
+      "phase": "P1",
+      "status": "shipped",
+      "why": "Queued from inbox.",
+      "test": "Verify provider-compatible generation, browser tool discovery, preview isolation, insertion and Undo/Redo, stale tokens and retries, errors, secrets, reload, old panel-layout migration and keyboard/tablet Help.",
+      "notes": "update the 'entity harness' to be agnostic. add MCP or similar support for easy agentic use. include help and documentation. | add help to top row menu headings.\n\nupdate the 'entity harness' to be agnostic. add MCP or similar support for easy agentic use. include help and documentation. | add help to top row menu headings.\n\nImplemented 2026-10-22: provider-neutral Vector Assistant with standard Chat Completions requests and model discovery. Versioned browser tool API (MCP or similar option): document/preview reads, validated SVG preview, guarded idempotent insertion, SVG export and help. No standalone MCP transport. Help top menu includes editor shortcuts, connection troubleshooting, agent examples and downloadable guide/schemas. Existing settings and panel layout retained. See planning/vector-assistant.md and tests/vector_assistant.py. Awaiting user review; model compatibility verified with browser request fixtures.",
+      "created": "2026-10-22T15:39:59.754Z",
+      "updated": "2026-10-22T19:02:32.355Z"
     }
   ],
   "inbox": []

@@ -28,18 +28,34 @@ with sync_playwright() as p:
     page.locator('#hudToggle').click();assert not hud.is_visible()
     load();assert not hud.is_visible()
     page.locator('#hudToggle').click();assert hud.is_visible()
-    # Panel controls share the title row and reveal on hover.
+    # Panel controls occupy a reserved row above the title and reveal on hover.
     ctl=page.locator('[data-panel="text"] .panel-controls');head=page.locator('[data-panel="text"] .panel-header')
     page.mouse.move(600,500);page.wait_for_timeout(200);assert ctl.evaluate('e=>getComputedStyle(e).opacity')=='0'
     head.hover(position={'x':10,'y':6});page.wait_for_timeout(200);assert ctl.evaluate('e=>getComputedStyle(e).opacity')=='1'
-    assert head.bounding_box()['height']<=30,'controls stay on the title row'
+    def assert_panel_rows():
+        measurements=page.locator('.panel-header').evaluate_all("""headers => headers.map(h => {
+            const controls=h.querySelector('.panel-controls'), c=controls.getBoundingClientRect();
+            const titles=[...h.childNodes].filter(n=>n!==controls && n.textContent.trim()).map(n=>{
+                const r=document.createRange();r.selectNodeContents(n);return r.getBoundingClientRect();
+            });
+            return {title:h.textContent,above:titles.every(t=>c.bottom<=t.top),
+                sizes:[...controls.children].map(b=>({w:b.getBoundingClientRect().width,h:b.getBoundingClientRect().height}))};
+        })""")
+        for m in measurements:
+            assert m['above'],m
+            assert all(s['w']<=28 and s['h']<=28 for s in m['sizes']),m
+    assert_panel_rows()
     # Inspector title follows state.
     page.locator('#toggleInspector').click();assert page.locator('#toggleInspector').get_attribute('title')=='Show inspector'
     page.locator('#toggleInspector').click()
     page.set_viewport_size({'width':768,'height':1024});page.wait_for_timeout(100)
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     assert page.locator('.menu-item').last.bounding_box()['y']<20,'menus stay on the top row at tablet width'
+    assert_panel_rows()
     page.screenshot(path=str(ROOT/'planning/buttons-tablet.png'))
+    touch=browser.new_page(viewport={'width':768,'height':1024},has_touch=True,is_mobile=True)
+    touch.goto((ROOT/'vector_pen_tool.html').as_uri());touch.wait_for_function('window.__DRAW_PANELS__')
+    original=page;page=touch;assert_panel_rows();page=original;touch.close()
     assert not errors,errors
     print('PASS: menus top-left + context slot; icon buttons with titles; zoom collapse/hover/pin/flash; coordinates hide + reload; tablet fit; no browser errors')
     browser.close()

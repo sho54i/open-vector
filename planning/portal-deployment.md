@@ -76,3 +76,16 @@ Live checks: exact hash, /projects 200 (OPEN-VECTOR + Open3D), /draw 307, old pa
 latest.json → 2026.10.16.1; release_smoke.py --manifest (live) passed; hosted editor:
 stroke gradient via swapper, + stop 2→3, SVG sgrad export, Undo, no page errors.
 Portal Git: 200ef63 pushed to sho54i/Tensor-Portal main.
+
+## Current editor + updater recovery release — 2026-10-22
+
+Published current editor and updater fixes as 2026.10.22.1 (sequence 2026102201),
+retaining older release packages. Updater recovery preserves the previous rollback
+record after late failures/crashes, and backup writes/restores reject linked paths.
+All 16 updater tests passed. Local and live release smoke passed: install, text
+0→1→Undo 0, attach/detach, rollback and artwork preservation.
+
+Production: https://tensor-portal-6g3dzd2lr-tensor-s4.vercel.app
+Deployment: dpl_8UiVfYXihFCjmXe9Edb9uHGJc5sJ (READY).
+Live editor matched source bytes; Projects editor link, previous package download,
+text/Undo and absence of page errors verified. Portal commit 76e92d4 pushed to main.

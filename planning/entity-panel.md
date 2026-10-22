@@ -1,3 +1,5 @@
+> Updated 2026-10-22: this panel is now **Vector Assistant**. Current connection, browser-agent API and Help documentation: [Vector Assistant](vector-assistant.md). The original implementation notes below are retained for history.
+
 # Entity Harness vector panel
 
 The resident panel lives at the top of the editor's right scrollable inspector.

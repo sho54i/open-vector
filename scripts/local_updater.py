@@ -45,6 +45,10 @@ def allowed(name):
 def target(root, name):
     if name != RECEIPT and not allowed(name):
         raise UpdateError('Disallowed update path: ' + str(name))
+    return checked_path(root, name)
+
+
+def checked_path(root, name):
     p = root
     for part in name.split('/'):
         p = p / part
@@ -53,6 +57,13 @@ def target(root, name):
     if p.exists() and not p.is_file():
         raise UpdateError('Expected a file: ' + str(p))
     return p
+
+
+def backup_target(root, backup_id, name):
+    if not isinstance(backup_id, str) or not re.fullmatch('[0-9a-f]{32}', backup_id):
+        raise UpdateError('Invalid recovery backup identifier.')
+    target(root, name)
+    return checked_path(root, STATE + '/backups/' + backup_id + '/' + name)
 
 
 def atomic_write(path, data):
@@ -194,15 +205,14 @@ def restore_backup(root, journal):
     backup_id = journal.get('backup')
     if not isinstance(backup_id, str) or not re.fullmatch('[0-9a-f]{32}', backup_id):
         raise UpdateError('Invalid recovery backup identifier.')
-    backup = root / STATE / 'backups' / backup_id
     # Validate every backup before changing any destination.
     restored = {}
     for name, info in journal['before'].items():
-        target(root, name)
+        source = backup_target(root, backup_id, name)
         if info is None:
             restored[name] = None
         else:
-            content = (backup / name).read_bytes()
+            content = source.read_bytes()
             if digest(content) != info:
                 raise UpdateError('Backup checksum mismatch: ' + name)
             restored[name] = content
@@ -217,17 +227,20 @@ def restore_backup(root, journal):
 def transact(root, content, fail_after=None):
     folder = root / STATE
     backup_id = uuid.uuid4().hex
-    backup = folder / 'backups' / backup_id
     before = {}
     for name in content:
         p = target(root, name)
+        backup = backup_target(root, backup_id, name)
         old = p.read_bytes() if p.exists() else None
         before[name] = digest(old) if old is not None else None
         if old is not None:
-            atomic_write(backup / name, old)
+            atomic_write(backup, old)
     journal = {'backup':backup_id,'before':before,'after':{n:digest(b) if b is not None else None for n,b in content.items()}}
     pending = folder / 'pending.json'
-    write_json(pending, journal)
+    last = folder / 'last-update.json'
+    # Keep the previous rollback record durable until the new update commits.
+    recovery = dict(journal, previous_last=read_json(last))
+    write_json(pending, recovery)
     try:
         for i, (name, data) in enumerate(content.items(), 1):
             p = target(root, name)
@@ -237,13 +250,26 @@ def transact(root, content, fail_after=None):
                 atomic_write(p, data)
             if fail_after == i:
                 raise OSError('Injected write failure')
-        write_json(folder / 'last-update.json', journal)
+        write_json(last, journal)
         pending.unlink()
     except BaseException:
         restore_backup(root, journal)
+        restore_last_update(folder, recovery)
         pending.unlink()
         raise
     return journal
+
+
+def restore_last_update(folder, journal):
+    last = folder / 'last-update.json'
+    if 'previous_last' in journal:
+        if journal['previous_last'] is None:
+            last.unlink(missing_ok=True)
+        else:
+            write_json(last, journal['previous_last'])
+    elif last.exists() and read_json(last).get('backup') == journal.get('backup'):
+        # Older pending updates and interrupted explicit rollbacks.
+        last.unlink()
 
 
 def install(root, m, files):
@@ -274,10 +300,9 @@ def rollback(root, recover=False):
         if recover:
             if not pending.exists():
                 raise UpdateError('No interrupted update to recover.')
-            restore_backup(root, read_json(pending))
-            last = folder / 'last-update.json'
-            if last.exists() and read_json(last).get('backup') == read_json(pending).get('backup'):
-                last.unlink()
+            journal = read_json(pending)
+            restore_backup(root, journal)
+            restore_last_update(folder, journal)
             pending.unlink()
             return
         if pending.exists():

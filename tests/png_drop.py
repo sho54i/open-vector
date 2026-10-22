@@ -91,7 +91,7 @@ with sync_playwright() as p:
     page.goto((ROOT/'ROADMAP.html').as_uri());page.wait_for_function('window.__ROADMAP__')
     page.evaluate("""()=>{const state=window.__ROADMAP__.seed();state.version=25;state.cards.find(c=>c.id==='p6-png').status='next';state.cards.find(c=>c.id==='p6-drop').status='queued';state.inbox=[{id:'saved-idea',title:'Keep this idea'}];localStorage.setItem('eve-roadmap-v1',JSON.stringify(state));}""")
     page.reload()
-    assert page.evaluate("window.__ROADMAP__.getState().cards.every(c=>c.status==='shipped')")
+    assert page.evaluate("window.__ROADMAP__.getState().cards.filter(c=>['p6-png','p6-drop'].includes(c.id)).every(c=>c.status==='shipped')")
     assert page.evaluate("window.__ROADMAP__.getState().inbox[0].id")=='saved-idea'
     assert not errors,errors
     print('PASS: failed/delayed file reads and drag cleanup; roadmap migrates both cards to shipped and preserves inbox.',flush=True)

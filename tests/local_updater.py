@@ -9,6 +9,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -90,6 +91,74 @@ class UpdaterTests(unittest.TestCase):
         self.assertEqual((self.root/'vector_pen_tool.html').read_text(),'original local editor')
         self.assertFalse((self.root/'vendor/temp.js').exists())
         self.assertFalse((self.root/updater.STATE/'pending.json').exists())
+
+    def test_late_cleanup_failure_preserves_previous_rollback(self):
+        pending=self.root/updater.STATE/'pending.json'
+        last=self.root/updater.STATE/'last-update.json'
+        unlink=Path.unlink
+        for prior_update in (False, True):
+            with self.subTest(prior_update=prior_update):
+                if prior_update:
+                    with updater.install_lock(self.root):
+                        updater.transact(self.root,{'vector_pen_tool.html':b'v1'})
+                expected=(self.root/'vector_pen_tool.html').read_bytes()
+                previous=updater.read_json(last)
+                failed=False
+                def fail_once(path,*args,**kwargs):
+                    nonlocal failed
+                    if path==pending and not failed:
+                        failed=True
+                        raise OSError('Injected cleanup failure')
+                    return unlink(path,*args,**kwargs)
+                with updater.install_lock(self.root), patch.object(Path,'unlink',fail_once):
+                    with self.assertRaises(OSError):
+                        updater.transact(self.root,{'vector_pen_tool.html':b'v2'})
+                self.assertEqual((self.root/'vector_pen_tool.html').read_bytes(),expected)
+                self.assertEqual(updater.read_json(last),previous)
+                self.assertFalse(pending.exists())
+        updater.rollback(self.root)
+        self.assertEqual((self.root/'vector_pen_tool.html').read_text(),'original local editor')
+
+    def test_crash_after_last_update_preserves_previous_rollback(self):
+        with updater.install_lock(self.root):
+            updater.transact(self.root,{'vector_pen_tool.html':b'v1'})
+        program='''import sys,os
+from pathlib import Path
+sys.path.insert(0,sys.argv[1])
+import local_updater as u
+root=Path(sys.argv[2]); original=u.write_json
+def crash(path,data):
+    original(path,data)
+    if path.name=='last-update.json': os._exit(71)
+u.write_json=crash
+with u.install_lock(root): u.transact(root,{'vector_pen_tool.html':b'v2'})
+'''
+        result=subprocess.run([sys.executable,'-c',program,str(ROOT/'scripts'),str(self.root)],timeout=10)
+        self.assertEqual(result.returncode,71)
+        updater.rollback(self.root,recover=True)
+        self.assertEqual((self.root/'vector_pen_tool.html').read_bytes(),b'v1')
+        updater.rollback(self.root)
+        self.assertEqual((self.root/'vector_pen_tool.html').read_text(),'original local editor')
+
+    def test_linked_backup_directory_rejected_before_write(self):
+        outside=self.root/'outside';outside.mkdir()
+        with updater.install_lock(self.root):
+            (self.root/updater.STATE/'backups').symlink_to(outside,target_is_directory=True)
+            with self.assertRaises(updater.UpdateError):
+                updater.transact(self.root,{'vector_pen_tool.html':b'new'})
+        self.assertEqual(list(outside.iterdir()),[])
+        self.assertEqual((self.root/'vector_pen_tool.html').read_text(),'original local editor')
+        self.assertFalse((self.root/updater.STATE/'pending.json').exists())
+
+    def test_linked_backup_file_rejected_before_restore(self):
+        with updater.install_lock(self.root):
+            journal=updater.transact(self.root,{'vector_pen_tool.html':b'new'})
+        backup=self.root/updater.STATE/'backups'/journal['backup']/'vector_pen_tool.html'
+        outside=self.root/'outside';outside.write_bytes(backup.read_bytes())
+        backup.unlink();backup.symlink_to(outside)
+        with self.assertRaises(updater.UpdateError):updater.rollback(self.root)
+        self.assertEqual((self.root/'vector_pen_tool.html').read_bytes(),b'new')
+        self.assertEqual(outside.read_text(),'original local editor')
 
     def test_process_crash_recovery(self):
         # Kill after a durable file replacement, before transaction completion.
