@@ -393,6 +393,8 @@
         }
         input[type="text"], textarea { user-select: text; }
         #vectorCanvas { touch-action: none; -webkit-touch-callout: none; }
+        .measure-readout { position:absolute; left:32px; bottom:46px; max-width:calc(100% - 44px); padding:9px 12px; border:1px solid var(--border-color); border-radius:4px; background:var(--bg-panel); color:var(--text-primary); font:12px var(--font-mono); pointer-events:none; z-index:5; }
+        .measure-readout small { display:block; margin-top:5px; color:var(--text-muted); font-size:10px; }
         .pencil-actions { position:absolute; top:30px; right:10px; display:flex; gap:4px; z-index:5; }
         .pencil-actions button { background:var(--bg-panel); color:var(--text-primary); border:1px solid var(--border-color); padding:8px; min-height:36px; }
         .pencil-settings label { display:block; margin:10px 0; }
@@ -638,6 +640,10 @@
                 <span class="tip">Eyedropper <span class="kbd">I</span></span>
             </button>
             <div class="divider"></div>
+            <button class="tool-btn" id="toolMeasure" data-mode="measure" aria-label="Measure (K)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16L16 3l5 5L8 21zM7 12l2 2m2-6l2 2m2-6l2 2" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+                <span class="tip">Measure <span class="kbd">K</span></span>
+            </button>
             <button class="tool-btn" id="toolHand" data-mode="hand" aria-label="Hand (H)">
                 <svg viewBox="0 0 24 24"><path d="M13 2a1.5 1.5 0 0 0-1.5 1.5V11h-1V4.5a1.5 1.5 0 1 0-3 0V12H6.5V8.5a1.5 1.5 0 1 0-3 0V16a6 6 0 0 0 6 6h3.5A5.5 5.5 0 0 0 18.5 16.5V8.5a1.5 1.5 0 0 0-3 0V11h-1V3.5A1.5 1.5 0 0 0 13 2z"/></svg>
                 <span class="tip">Hand / Pan <span class="kbd">H</span></span>
@@ -663,6 +669,7 @@
 
         <main class="viewport" id="viewport" tabindex="0">
             <canvas id="vectorCanvas"></canvas>
+            <div id="measureReadout" class="measure-readout" hidden><span id="measureValue" role="status" aria-live="polite"></span><small>Click two nodes or drag · Shift: 45° · Alt: centred · Esc clears</small></div>
             <div class="pencil-actions" aria-label="Drawing actions">
                 <button id="pencilUndo" class="icon-btn" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4V2M4.5 7A8 8 0 1 1 6 17"/></svg></button>
                 <button id="pencilRedo" class="icon-btn" title="Redo (Ctrl+Y)" aria-label="Redo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7h5V2M19.5 7A8 8 0 1 0 18 17"/></svg></button>
@@ -1259,6 +1266,7 @@
             if (e.target !== canvas || e.button !== 0 || spacePan || currentMode === 'hand') return;
             const s = screenOfEvent(e), w = worldFromScreen(s);
             const axis = s.y < RULER_SIZE && s.x >= RULER_SIZE ? 'y' : s.x < RULER_SIZE && s.y >= RULER_SIZE ? 'x' : null;
+            if (currentMode === 'measure') return;
             const hit = axis ? null : guides.find(g => Math.abs(s[g.axis] - (g.position * camera.scale + camera[g.axis])) < 5);
             selectedGuide = hit || null;
             if (!axis && !hit) { draw(); return; }
@@ -1375,6 +1383,7 @@
         let paths = [];
         let activePath = -1;
         let currentMode = 'pen';
+        let measurement = null, measureGesture = null;
         let spacePan = false;
         let camera = { x: 0, y: 0, scale: 1 };
         let showGrid = true;
@@ -2702,6 +2711,7 @@
                 }
                 applyWorldTransform();
             }
+            drawMeasurement();
             drawRulersAndGuides();
             updateHud();
         }
@@ -3133,15 +3143,77 @@
             return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
 
+        function clearMeasurement() {
+            measurement = null;
+            if (measureGesture) { measureGesture = null; pointerDown = false; }
+        }
+        function measurePoint(w) {
+            let best = null, reach = hitWorld();
+            for (const path of paths) {
+                if (path.visible === false) continue;
+                for (const point of path.points) {
+                    const distance = dist(w, point);
+                    if (distance <= reach) { best = point; reach = distance; }
+                }
+            }
+            return best ? {x:best.x, y:best.y, snapped:true} : {x:w.x, y:w.y, snapped:false};
+        }
+        function updateMeasurement(w, modifiers) {
+            if (!measurement || measurement.complete) return;
+            measurement.raw = {x:w.x, y:w.y};
+            const origin = measurement.origin;
+            let endpoint = measurePoint(w);
+            if (modifiers.shiftKey) {
+                const constrained = constrainAngle(endpoint, origin);
+                endpoint = {...constrained, snapped:endpoint.snapped && dist(endpoint, constrained) < 1e-8};
+            }
+            measurement.a = modifiers.altKey
+                ? {x:2*origin.x-endpoint.x, y:2*origin.y-endpoint.y, snapped:false}
+                : {...origin};
+            measurement.b = endpoint;
+            measurement.centred = !!modifiers.altKey;
+            measurement.constrained = !!modifiers.shiftKey;
+        }
+        function measurementInfo() {
+            if (!measurement) return null;
+            const {a,b,complete} = measurement, factor = documentUnitFactor();
+            return {a:{...a}, b:{...b}, complete, centred:!!measurement.centred, constrained:!!measurement.constrained, units:documentSettings.units,
+                distance:dist(a,b)/factor, dx:(b.x-a.x)/factor, dy:(b.y-a.y)/factor};
+        }
+        function drawMeasurement() {
+            const panel = document.getElementById('measureReadout');
+            panel.hidden = currentMode !== 'measure';
+            if (panel.hidden) return;
+            const info = measurementInfo(), value = document.getElementById('measureValue');
+            const text = info ? `${info.distance.toFixed(2)} ${info.units} · ΔX ${info.dx.toFixed(2)} · ΔY ${info.dy.toFixed(2)}${measurement.constrained ? ' · 45°' : ''}${measurement.centred ? ' · centred' : ''}${info.complete ? '' : ' · pick endpoint'}` : 'Pick a start node or drag to measure';
+            if (value.textContent !== text) value.textContent = text;
+            ctx.save(); applyScreenTransform();
+            // Expose anchors without changing the document selection or node preference.
+            for (const path of paths) if (path.visible !== false) for (const p of path.points) {
+                drawScreenSquare(screenFromWorld(p), 2.5, themePalette['board-bg'], themePalette['accent-cyan']);
+            }
+            if (measurement) {
+                const a = screenFromWorld(measurement.a), b = screenFromWorld(measurement.b);
+                ctx.strokeStyle = themePalette['accent-gold']; ctx.lineWidth = 1.5; ctx.setLineDash([5,3]);
+                ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.setLineDash([]);
+                for (const [point, world] of [[a,measurement.a],[b,measurement.b]]) {
+                    drawScreenCircle(point, world.snapped ? 5 : 3, themePalette['board-bg'], themePalette['accent-gold']);
+                }
+            }
+            ctx.restore();
+        }
+
         function modeCursor() {
             if (window.penFormsReady && PEN_FORMS[currentMode]) return penFormCursor(currentMode);
             if (currentMode === 'pen' || currentMode === 'pencil' || currentMode === 'ellipse' || currentMode === 'rect') return 'crosshair';
+            if (currentMode === 'measure') return 'crosshair';
             if (currentMode === 'hand') return 'grab';
             if (currentMode === 'eyedrop') return EYEDROP_CURSOR;
             return 'default';
         }
         function setMode(mode) {
             cancelPencil();
+            clearMeasurement();
             currentMode = mode;
             if (window.penFormsReady) syncPenForm(mode);
             snapDrag = null;
@@ -3261,8 +3333,15 @@
             pointerDown = true;
             dirtySinceDown = false;
             shiftClickPath = null; copyDragSnapshot = null;
+            if (currentMode === 'measure') {
+                const endpoint = measurePoint(w), second = measurement && !measurement.complete;
+                if (!second) measurement = {origin:{...endpoint}, raw:{...w}, a:endpoint, b:endpoint, complete:false};
+                updateMeasurement(w, e);
+                measureGesture = {id:e.pointerId, origin:s, second:!!second, moved:false};
+                try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
+                e.preventDefault(); draw(); return;
+            }
             hideNodes = false;
-
             if (currentMode.startsWith('anchor-')) {
                 const hit = detectElementAt(w);
                 pointerDown = false;
@@ -3454,6 +3533,12 @@
                 return;
             }
 
+            if (currentMode === 'measure' && !spacePan) {
+                if (measureGesture && e.pointerId !== measureGesture.id) return;
+                if (measureGesture && dist(s, measureGesture.origin) >= 3) measureGesture.moved = true;
+                updateMeasurement(w, e);
+                viewport.style.cursor = 'crosshair'; draw(); return;
+            }
             if (shapeOrigin && pointerDown) {
                 Object.assign(w, snapPosition(w));
                 shapePreview = {
@@ -3564,6 +3649,17 @@
         });
 
         function endPointer(e) {
+            if (measureGesture) {
+                if (e.pointerId !== measureGesture.id) return;
+                const gesture = measureGesture;
+                measureGesture = null; pointerDown = false; dirtySinceDown = false;
+                if (e.type !== 'pointerup') clearMeasurement();
+                else {
+                    updateMeasurement(worldFromScreen(screenOfEvent(e)), e);
+                    measurement.complete = gesture.second || gesture.moved || dist(screenOfEvent(e),gesture.origin) >= 3;
+                }
+                draw(); return;
+            }
             if (anchorGesture) {
                 const g = anchorGesture; anchorGesture = null;
                 if (e.type === 'pointercancel' || e.type === 'lostpointercapture') Object.assign(g.point, g.before);
@@ -3637,8 +3733,8 @@
             pruneEmptyPaths();
             renderLayers();
         }
-        viewport.addEventListener('lostpointercapture', e => { if (pencilStroke || anchorGesture) endPointer(e); });
-        window.addEventListener('blur', cancelPencil);
+        viewport.addEventListener('lostpointercapture', e => { if (pencilStroke || anchorGesture || measureGesture) endPointer(e); });
+        window.addEventListener('blur', () => { cancelPencil(); clearMeasurement(); draw(); });
         viewport.addEventListener('pointerup', endPointer);
         viewport.addEventListener('pointercancel', endPointer);
         window.addEventListener('pointerup', endPointer);
@@ -3826,6 +3922,7 @@
             try { incoming = normalizeLoadedPaths(data); }
             catch (error) { showToast(error.message, true); return false; }
             if (!incoming.length && !Array.isArray(data.guides) && !data.artboards && !data.artboard) return false;
+            clearMeasurement();
             if (merge) paths = paths.concat(remapClipIds(incoming));
             else {
                 documentSettings = normalizedDocument(data.document);
@@ -4085,6 +4182,7 @@
         }
         function restoreSnapshot(snap) {
             cancelPencil();
+            clearMeasurement();
             snapDrag = null;
             const data = JSON.parse(snap);
             suppressHistory = true;
@@ -4398,6 +4496,7 @@
         }
         function newDocument() {
             cancelPencil();
+            clearMeasurement();
             documentSettings = normalizedDocument(null);
             artboards = defaultArtboards(); activeArtboardId = artboards[0].id; nextArtboardId = 2;
             snapDrag = null;
@@ -4803,6 +4902,14 @@
             return tag === 'textarea' || tag === 'select' || tag === 'input' || !!el?.isContentEditable;
         }
         function isMod(e) { return e.ctrlKey || e.metaKey; }
+        function measureModifier(e) {
+            if (currentMode !== 'measure' || !measurement || measurement.complete || isTyping(e.target) || !['Shift','Alt'].includes(e.key)) return;
+            e.preventDefault();
+            updateMeasurement(measurement.raw, e);
+            draw();
+        }
+        window.addEventListener('keydown', measureModifier);
+        window.addEventListener('keyup', measureModifier);
 
         window.addEventListener('keydown', (e) => {
             if (isTyping(e.target)) { if (e.key === 'Escape') pasteModal.classList.remove('show'); return; }
@@ -4860,6 +4967,8 @@
             else if (k === 'l') setMode('ellipse');
             else if (k === 'm') setMode('rect');
             else if (k === 'i') setMode('eyedrop');
+            else if (k === 'k') setMode('measure');
+            else if (e.key === 'Escape' && currentMode === 'measure') { e.preventDefault(); clearMeasurement(); draw(); }
             else if (e.key === 'Escape') { e.preventDefault(); cancelPencil(); finishOpenPath(); }
             else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelected(); }
         });
@@ -4887,6 +4996,7 @@
                 return {
                     pencilPrefs: { ...pencilPrefs },
                     mode: currentMode,
+                    measurement: measurementInfo(),
                     pngExportBusy, svgDropBusy,
                     artboards: artboards.map(b => ({ ...b })), activeArtboardId,
                     snapEnabled, gridStep: gridStep(),
@@ -6344,6 +6454,7 @@
     <nav aria-label="Help topics"><button type="button" class="action-btn ghost" data-help="basics">Editor guide</button><button type="button" class="action-btn ghost" data-help="assistant">Vector Assistant</button><button type="button" class="action-btn ghost" data-help="agents">Agent tools</button></nav>
     <section data-help-topic="basics">
         <h3>Draw, edit and save</h3>
+        <p>Use K for Measure: click two anchors or drag a line to read distance and X/Y deltas in Document setup units. Hold Shift for 45° angles, Alt to measure from the centre, or both together. Escape clears the temporary measurement; artwork is unchanged.</p>
         <p>Use P for Pen, N for Pencil, M for Rectangle and L for Ellipse. Click with Pen to add corners; drag to draw curves. Click the first anchor to close a path, or press Escape to finish an open path.</p>
         <p>V selects objects; A edits anchors and handles. Long-press Pen for Add, Remove and Convert anchor. Convert: click to toggle smooth/corner, drag an anchor for mirrored handles, or drag a handle independently. Shift constrains angles.</p>
         <p>Ctrl/Cmd+Z undoes; Ctrl/Cmd+Y redoes. Ctrl/Cmd+C and V copy and paste; Ctrl/Cmd+F pastes in front. Alt-drag copies selected artwork. Space-drag pans; Ctrl/Cmd+wheel zooms; Ctrl/Cmd+0 fits the active artboard.</p>

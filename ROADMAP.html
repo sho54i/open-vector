@@ -531,7 +531,9 @@
             card({"id": "c8g9lqt2", "title": "vector assistant review", "phase": "P1", "status": "testing", "why": "Queued from inbox.", "test": "Verify provider-compatible generation, browser tool discovery, preview isolation, insertion and Undo/Redo, stale tokens and retries, errors, secrets, reload, old panel-layout migration and keyboard/tablet Help.", "notes": "update the 'entity harness' to be agnostic. add MCP or similar support for easy agentic use. include help and documentation. | add help to top row menu headings.\n\nImplemented 2026-10-22: provider-neutral Vector Assistant with standard Chat Completions requests and model discovery. Versioned browser tool API (MCP or similar option): document/preview reads, validated SVG preview, guarded idempotent insertion, SVG export and help. No standalone MCP transport. Help top menu includes editor shortcuts, connection troubleshooting, agent examples and downloadable guide/schemas. Existing settings and panel layout retained. See planning/vector-assistant.md and tests/vector_assistant.py. Awaiting user review; model compatibility verified with browser request fixtures.", "created": "2026-10-22T15:39:59.754Z", "updated": "2026-10-22T16:26:07.472813+00:00"})
         );
 
-        const SEED = { version: 42, filter: 'all', cards: SEED_CARDS, inbox: [] };
+        SEED_CARDS.push(card({"id": "c9ir5jqc", "title": "measure tool", "phase": "P5", "status": "testing", "why": "Queued from inbox.", "test": "Click two nodes and drag a free line; verify exact distance, zoom/pan invariance, px/mm/in units, locked/hidden nodes, zero length, cancellation, pen/touch input and unchanged document/history. Regress anchors, rulers, precision and Pencil. Verify Shift/Alt alone and combined, stationary key changes and finalized-result retention.", "notes": "user can click two nodes, or they can draw a line to get a measurement. keep in the left toolbar.\n\nImplemented 2026-10-22: Measure (K) in the left toolbar. Click two anchors or drag a temporary line; read distance and X/Y deltas in Document setup units. Visible anchors snap within screen-space reach, including locked artwork; hidden paths are excluded. Escape, tool switch, cancellation and document reset clear measurements. No artwork or history entries are created. Chromium tests passed; user/device review pending. See planning/measure.md and tests/measure.py.\n\nAlt/Shift follow-up: Shift constrains to 45°; Alt measures symmetrically about the start; combine both. Live key changes update stationary previews. Finalized results retain modifiers; artwork/history unchanged. Expanded tests/measure.py passed.", "created": "2026-10-22T19:16:42.254Z", "updated": "2026-10-22T19:46:49.393815+00:00"}));
+
+        const SEED = { version: 44, filter: 'all', cards: SEED_CARDS, inbox: [] };
 
         let state = clone(SEED);
 
@@ -615,7 +617,7 @@
                 state.inbox = state.inbox.filter(c => c.id !== id);
             }
             // Bring existing browser boards up to date without losing custom cards or notes.
-            for (const id of ["c5aikqvn", "ceip7mb9", "cp52taxv", "cjkgoo1s", "c0tkdhbq", "p3-colour-swapper", "p3-stroke-grad", "cyb0pf3h", "cx9tgwvz", "ct8ebh0i", "cjriuz69", "c46iw5mp", "c8g9lqt2"]) {
+            for (const id of ["c5aikqvn", "ceip7mb9", "cp52taxv", "cjkgoo1s", "c0tkdhbq", "p3-colour-swapper", "p3-stroke-grad", "cyb0pf3h", "cx9tgwvz", "ct8ebh0i", "cjriuz69", "c46iw5mp", "c8g9lqt2", "c9ir5jqc"]) {
                 const seed = SEED_CARDS.find(c => c.id === id);
                 const existing = state.cards.find(c => c.id === id);
                 const inbox = state.inbox.find(c => c.id === id);
