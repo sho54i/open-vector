@@ -89,3 +89,15 @@ Production: https://tensor-portal-6g3dzd2lr-tensor-s4.vercel.app
 Deployment: dpl_8UiVfYXihFCjmXe9Edb9uHGJc5sJ (READY).
 Live editor matched source bytes; Projects editor link, previous package download,
 text/Undo and absence of page errors verified. Portal commit 76e92d4 pushed to main.
+
+## Draw perf release — 2026-10-23
+
+Editor commit 8c8db77 (draw perf pass) copied byte-identical to public/draw/index.html
+(sha256 f5818593…). Release feed 2026.10.23.1 (sequence 2026102301) added; earlier
+packages kept. Portal checkout fast-forwarded to origin/main 30102f4 (DIR/TIR ordering)
+first, so that fix is retained. Production: https://tensor-portal-jdudpm2q5-tensor-s4.vercel.app
+(Ready); an earlier `--prod` run a minute before (tensor-portal-7yj2jdw0c) built the same
+tree and was superseded. Live checks: exact hash, /projects 200, /draw 307, /dir 200,
+2026.10.22.2 + 2026.10.23.1 packages 200, latest.json → 2026.10.23.1; release_smoke.py
+local and --manifest (live) passed; hosted editor rect 0→1→Undo 0, deferDraw present,
+no page errors.
