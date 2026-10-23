@@ -101,9 +101,9 @@ with sync_playwright() as p:
     page.goto((ROOT/'ROADMAP.html').as_uri())
     page.evaluate("localStorage.setItem('eve-roadmap-v1',JSON.stringify({version:39,cards:[{id:'custom',title:'Keep me',status:'queued'}],inbox:[]}))")
     page.reload()
-    cards=page.evaluate('state.cards')
+    cards=page.evaluate('state.cards');seeds={c['id']:c for c in page.evaluate('SEED_CARDS')}
     for id in ['ct8ebh0i','cjriuz69','c46iw5mp']:
-        matches=[c for c in cards if c['id']==id];assert len(matches)==1 and matches[0]['status']=='testing',matches
+        matches=[c for c in cards if c['id']==id];assert len(matches)==1 and matches[0]['status']==seeds[id]['status'],matches
     assert any(c['id']=='custom' for c in cards)
     assert not errors,errors
     browser.close()

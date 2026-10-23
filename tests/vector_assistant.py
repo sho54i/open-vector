@@ -103,8 +103,8 @@ with sync_playwright() as p:
     # Roadmap migration adds this card once and preserves custom user notes.
     roadmap=browser.new_page();roadmap.on('pageerror',lambda e:errors.append(str(e)))
     roadmap.goto((ROOT/'ROADMAP.html').as_uri())
-    assert roadmap.evaluate('state.version')==42
-    roadmap.evaluate("state.version=41;state.cards=state.cards.filter(c=>c.id!=='c8g9lqt2');state.cards.push({id:'custom-test',title:'Keep me',phase:'P1',status:'queued',notes:'User notes',updated:'2026-10-22T00:00:00Z'});persist()")
+    assert roadmap.evaluate('state.version===SEED.version')
+    roadmap.evaluate("state.version=SEED.version-1;state.cards=state.cards.filter(c=>c.id!=='c8g9lqt2');state.cards.push({id:'custom-test',title:'Keep me',phase:'P1',status:'queued',notes:'User notes',updated:'2026-10-22T00:00:00Z'});persist()")
     roadmap.reload()
     assert roadmap.evaluate("state.cards.filter(c=>c.id==='c8g9lqt2').length")==1
     assert roadmap.evaluate("state.cards.find(c=>c.id==='c8g9lqt2').status")=='testing'

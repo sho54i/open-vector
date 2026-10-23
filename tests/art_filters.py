@@ -61,8 +61,9 @@ with sync_playwright() as p:
     board=browser.new_page();board.goto((ROOT/'ROADMAP.html').as_uri())
     board.evaluate("localStorage.setItem('eve-roadmap-v1',JSON.stringify({version:38,cards:[{id:'cx9tgwvz',status:'queued',updated:'2026-10-22T08:41:12.016Z',notes:'Keep this note'}],inbox:[{id:'custom',title:'Unrelated work'}]}))")
     board.reload();migrated=board.evaluate('state');cards=[c for c in migrated['cards'] if c['id']=='cx9tgwvz']
-    assert len(cards)==1 and cards[0]['status']=='testing' and 'Keep this note' in cards[0]['notes']
-    assert migrated['version']==39 and any(c['id']=='custom' for c in migrated['inbox'])
+    seed=board.evaluate("({version:SEED.version,status:SEED_CARDS.find(c=>c.id==='cx9tgwvz').status})")
+    assert len(cards)==1 and cards[0]['status']==seed['status'] and 'Keep this note' in cards[0]['notes']
+    assert migrated['version']==seed['version'] and any(c['id']=='custom' for c in migrated['inbox'])
     board.reload();assert board.evaluate("state.cards.filter(c=>c.id==='cx9tgwvz').length")==1
     board.close()
     assert not errors,errors
