@@ -1222,7 +1222,7 @@
             if (e.type === 'pointerup' || e.type === 'pointercancel') canvasPointer=null;
         }
         viewport.addEventListener('pointerdown', routeCanvasPointer, true);
-        viewport.addEventListener('pointermove', routeCanvasPointer, true);
+        viewport.addEventListener('pointermove', deferDraw(routeCanvasPointer), true);
         window.addEventListener('pointerup', routeCanvasPointer, true);
         window.addEventListener('pointercancel', routeCanvasPointer, true);
         viewport.addEventListener('lostpointercapture', e => {
@@ -1277,11 +1277,11 @@
             e.preventDefault(); e.stopImmediatePropagation(); draw();
             setStatus('GUIDE — DRAG TO MOVE · DELETE TO REMOVE');
         }, true);
-        viewport.addEventListener('pointermove', e => {
+        viewport.addEventListener('pointermove', deferDraw(e => {
             if (!guideDrag || e.pointerId !== guideDrag.id) return;
             selectedGuide.position = worldFromScreen(screenOfEvent(e))[selectedGuide.axis];
             e.stopImmediatePropagation(); draw();
-        }, true);
+        }), true);
         function endGuide(e) {
             if (!guideDrag || e.pointerId !== guideDrag.id) return;
             const s = screenOfEvent(e);
@@ -1583,6 +1583,12 @@
             return false;
         }
 
+        // One pass for many lookups; pathContaining per anchor is O(anchors) each.
+        function pointOwners() {
+            const owners = new Map();
+            for (const path of paths) for (const p of path.points) owners.set(p, path);
+            return owners;
+        }
         function pathContaining(pt) {
             if (!pt) return null;
             for (const path of paths) if (path.points.includes(pt)) return path;
@@ -1666,8 +1672,9 @@
             const hosts = [];
             const hostSeen = new Set();
             if (path && path.points.length) { hosts.push(path); hostSeen.add(path); }
+            const owners = pointOwners();
             for (const p of selectedPoints) {
-                const h = pathContaining(p);
+                const h = owners.get(p);
                 if (h && !hostSeen.has(h)) { hostSeen.add(h); hosts.push(h); }
             }
             setPathSelection(hosts, path || hosts[0] || null);
@@ -2095,12 +2102,23 @@
             };
         }
 
+        // Cheap reject before canvas/curve hit tests: a cubic lies inside the box of its anchors and
+        // handles; the pad covers the widest stroke (4x width profile, miter limit 10) plus `extra`.
+        function nearPath(path, world, extra) {
+            const pad = 5 * ((path.strokeWidth || 2) * 4 + extra);
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const p of path.points) {
+                minX = Math.min(minX, p.x, p.cp1.x, p.cp2.x); maxX = Math.max(maxX, p.x, p.cp1.x, p.cp2.x);
+                minY = Math.min(minY, p.y, p.cp1.y, p.cp2.y); maxY = Math.max(maxY, p.y, p.cp1.y, p.cp2.y);
+            }
+            return world.x >= minX - pad && world.x <= maxX + pad && world.y >= minY - pad && world.y <= maxY + pad;
+        }
         function hitStrokeAt(world) {
             const r = hitWorld() * 1.6;
             for (let i = paths.length - 1; i >= 0; i--) {
                 const path = paths[i];
                 if (!path.points.length || path.visible === false || path.locked) continue;
-                if (!clipAllowsPoint(path, world)) continue;
+                if (!nearPath(path, world, r) || !clipAllowsPoint(path, world)) continue;
                 const seg = closestSegmentOnPath(path, world);
                 if (seg && seg.d <= r) return path;
             }
@@ -2114,6 +2132,7 @@
             for (let i = paths.length - 1; i >= 0; i--) {
                 const path = paths[i];
                 if (!path.points.length || path.visible === false || path.locked) continue;
+                if (!path.clipMask && !nearPath(path, world, hitWorld() * 1.6)) continue;
                 if (!clipAllowsPoint(path, world)) continue;
                 if (path.clipMask) { ctx.restore(); return path; }
                 if (path.widthProfile && ctx.isPointInPath(variableStrokeOutline(path).shape,px,py)) { ctx.restore(); return path; }
@@ -2142,6 +2161,7 @@
                 for (let i = paths.length - 1; i >= 0; i--) {
                     const path = paths[i];
                     if (!path.points.length || path.visible === false || path.locked) continue;
+                    if (!nearPath(path, world, r)) continue;
                     if (!path.clipMask && !isSelectedPath(path) && !clipAllowsPoint(path, world)) continue;
                     for (const p of path.points) {
                         if (dist(world, p) < r) return { type: 'anchor', point: p, path };
@@ -2164,8 +2184,9 @@
         function moveSelectionBy(dx, dy) {
             const pts = pointSelection();
             if (pts.length) {
+                const owners = pointOwners();
                 for (const p of pts) {
-                    const path = pathContaining(p);
+                    const path = owners.get(p);
                     if (path && path.locked) continue;
                     movePointBy(p, dx, dy);
                 }
@@ -2499,9 +2520,8 @@
 
         function drawGrid() {
             if (!showGrid) return;
-            const r = canvas.getBoundingClientRect();
             const a = worldFromScreen({ x: 0, y: 0 });
-            const b = worldFromScreen({ x: r.width, y: r.height });
+            const b = worldFromScreen({ x: viewport.clientWidth, y: viewport.clientHeight });
             const step = gridStep();
             ctx.beginPath();
             ctx.strokeStyle = themePalette['grid-color'];
@@ -2555,7 +2575,16 @@
             ctx.stroke();
         }
 
+        // Pointer/wheel bursts (240 Hz pens, coalesced moves) render once per frame;
+        // every other draw() stays synchronous, so callers can read pixels straight after.
+        let drawDefer = 0, drawPending = false;
         function draw() {
+            if (drawDefer) { if (!drawPending) { drawPending = true; requestAnimationFrame(flushDraw); } return; }
+            drawPending = false; drawFrame();
+        }
+        function flushDraw() { if (drawPending) { drawPending = false; drawFrame(); } }
+        function deferDraw(fn) { return function (e) { drawDefer++; try { return fn.call(this, e); } finally { drawDefer--; } }; }
+        function drawFrame() {
             const cssW = viewport.clientWidth, cssH = viewport.clientHeight;
             applyScreenTransform();
             ctx.clearRect(0, 0, cssW, cssH);
@@ -2681,17 +2710,21 @@
                         seen.add(path); nodePaths.push(path);
                     }
                 };
+                // Sets, not indexOf/pathContaining per anchor: those were O(selected x anchors).
+                const selSet = new Set(selectedPoints);
                 if (currentMode === 'pen') addPath(paths[activePath] || selectedPath);
                 else if (marquee) livePaths().forEach(addPath);
                 else {
                     for (const path of pathSelection()) addPath(path);
-                    for (const pt of selectedPoints) addPath(pathContaining(pt));
+                    if (selSet.size) for (const path of paths) if (path.points.some(p => selSet.has(p))) addPath(path);
                 }
-                const pending = marquee ? pointsInRect(marquee.x0, marquee.y0, marquee.x1, marquee.y1) : [];
+                if (selectedPoint) selSet.add(selectedPoint);
+                if (selectedHandle) selSet.add(selectedHandle.point);
+                if (marquee) for (const p of pointsInRect(marquee.x0, marquee.y0, marquee.x1, marquee.y1)) selSet.add(p);
                 applyScreenTransform();
                 for (const path of nodePaths) {
                     for (const p of path.points) {
-                        const isSel = isSelectedPoint(p) || (selectedHandle && selectedHandle.point === p) || pending.includes(p);
+                        const isSel = selSet.has(p);
                         const sp = screenFromWorld(p);
                         if (p.hasHandles && (isSel || currentMode === 'direct')) {
                             const s1 = screenFromWorld(p.cp1), s2 = screenFromWorld(p.cp2);
@@ -3499,7 +3532,7 @@
             draw();
         });
 
-        viewport.addEventListener('pointermove', (e) => {
+        viewport.addEventListener('pointermove', deferDraw((e) => {
             const s = screenOfEvent(e);
             const w = worldFromScreen(s);
             document.getElementById('hudX').textContent = w.x.toFixed(2);
@@ -3646,7 +3679,7 @@
                     : currentMode === 'pen' || currentMode === 'pencil' || currentMode === 'ellipse' || currentMode === 'rect' ? 'crosshair'
                     : 'default';
             }
-        });
+        }));
 
         function endPointer(e) {
             if (measureGesture) {
@@ -3758,7 +3791,7 @@
             scheduleSessionSave();
         });
 
-        viewport.addEventListener('wheel', (e) => {
+        viewport.addEventListener('wheel', deferDraw((e) => {
             e.preventDefault();
             const s = screenOfEvent(e);
             if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -3768,7 +3801,7 @@
                 panBy(-e.deltaX, -e.deltaY);
                 scheduleSessionSave();
             }
-        }, { passive: false });
+        }), { passive: false });
 
         function pathToD(path, ox, oy) {
             return pathContours(path).map(points => contourToD({ points, closed: path.closed }, ox, oy)).join(' ');
@@ -4993,6 +5026,7 @@
             setSnapping, snapPosition,
             getGuides: () => validGuides(guides),
             getState() {
+                flushDraw();
                 return {
                     pencilPrefs: { ...pencilPrefs },
                     mode: currentMode,
