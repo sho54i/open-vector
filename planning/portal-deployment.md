@@ -101,3 +101,22 @@ tree and was superseded. Live checks: exact hash, /projects 200, /draw 307, /dir
 2026.10.22.2 + 2026.10.23.1 packages 200, latest.json → 2026.10.23.1; release_smoke.py
 local and --manifest (live) passed; hosted editor rect 0→1→Undo 0, deferDraw present,
 no page errors.
+
+## Recent files + skew release — 2026-10-26
+
+Release 2026.10.26.1 (sequence 2026102601) publishes File → Open recent files
+and the Skew panel. Editor source commit be242d1, portal commit f1cde8b; both
+pushed to GitHub. Editor history and cleanup are backed up at H:\draw-git.
+The roadmap seed matches its JSON, sidebar is parked, and generated test outputs
+now go to /tmp. These planning/test files are excluded from the hosted editor.
+
+Production: https://tensor-portal-9f9dvfo82-tensor-s4.vercel.app
+Deployment: dpl_DqWNR6rbab18ouUxDC8mxFCbzgoY (READY), aliased to
+https://tensor-portal.vercel.app. Deployed through the Vercel CLI.
+
+Live verification: hosted editor exactly matches source SHA-256; horizontal skew
+changes anchors by the expected shear and Undo restores geometry; reopening a
+recent SVG changes path count 0 → 1. Projects link, latest release feed and previous
+2026.10.23.1 package are available. Local and public release smoke passed install,
+text 0 → 1 → Undo 0, attach/detach, rollback and artwork preservation. No browser
+page errors. Original branding/source art and previous hosted releases retained.
