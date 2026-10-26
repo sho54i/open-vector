@@ -133,7 +133,7 @@ with sync_playwright() as p:
     setup(ring);page.evaluate('window.__DRAW__.selectPoint(0,4);window.__DRAW__.zoomToSelection()')
     page.locator('[data-boolean="subtract"]').scroll_into_view_if_needed()
     page.wait_for_timeout(2000)
-    page.screenshot(path=str(ROOT/'planning/pathfinder.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-pathfinder.png')))
     assert not errors,errors
     print('PASS: disjoint/touching/identical shapes, empty subtraction + undo, multiple cutters, invalid input guards, cubic preservation; no browser errors.',flush=True)
     page.goto((ROOT/'ROADMAP.html').as_uri())

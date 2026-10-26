@@ -41,7 +41,7 @@ with sync_playwright() as p:
     assert 'linear-gradient' in sw('fill').evaluate("e=>getComputedStyle(e).backgroundImage")
     btn('gradient');assert page.evaluate("selectedPath.fillType")=='solid','second click toggles off'
     btn('gradient')
-    page.locator('.toolbar').screenshot(path=str(ROOT/'planning/colour-swapper.png'))
+    page.locator('.toolbar').screenshot(path=str(Path('/tmp/open-vector-colour-swapper.png')))
     page.keyboard.press('Control+z');assert page.evaluate('paths[paths.length-1].fillType')=='solid','undo restores'
     assert not errors,errors
     print('PASS: front-swatch picker, swapper focus, black/white toggle, last used, none on front, gradient fill toggle, no-stroke persists, undo')

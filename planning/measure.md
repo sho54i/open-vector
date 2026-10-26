@@ -28,7 +28,7 @@ Validation: `python3 tests/measure.py` passed: node clicks produce 300 px; a fre
 drag produces 200 px; 2x zoom and pan preserve distance; 300 px at 300 DPI converts
 to 25.4 mm / 1 in. Locked nodes, hidden exclusion, zero length, pen/touch routing,
 cancellation, switching, resets and unchanged document/history passed. Screenshot:
-`planning/measure.png`. Existing convert_anchor, rulers, precision and pencil
+`/tmp/open-vector-measure.png`. Existing convert_anchor, rulers, precision and pencil
 regressions passed. Physical tablet testing remains for user review.
 
 Modifier tests passed: horizontal/diagonal constraints, centred endpoints, combined

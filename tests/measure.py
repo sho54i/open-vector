@@ -89,7 +89,7 @@ with sync_playwright() as p:
     page.evaluate('newDocument()');assert info() is None
     page.evaluate("__DRAW__.loadOutline({paths:[{points:[{x:120,y:120},{x:300,y:360}]}]});camera={x:40,y:40,scale:1};setMode('measure');draw()")
     drag((120,120),(300,360))
-    page.screenshot(path=str(ROOT/'planning/measure.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-measure.png')))
     page.evaluate('restoreSnapshot(history[0])');assert info() is None
     assert not errors,errors
     browser.close()

@@ -39,10 +39,10 @@ with sync_playwright() as p:
     # Touch long press opens the same choices without invoking a drawing action.
     page.locator('#toolPen').dispatch_event('pointerdown',{'button':0,'pointerType':'touch','clientX':20,'clientY':200})
     page.wait_for_timeout(500);page.locator('#toolPen').dispatch_event('pointerup',{'pointerType':'touch'});assert page.locator('#penMenu').is_visible()
-    page.screenshot(path=str(ROOT/'planning/pen-tools.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-pen-tools.png')))
     page.keyboard.press('Escape');page.set_viewport_size({'width':768,'height':1024})
     page.locator('[data-menu="file"] .menu-item').click();page.locator('#documentMenuTrigger').click()
     box=page.locator('#documentSubmenu').bounding_box();assert box['x']>=0 and box['x']+box['width']<=768 and box['y']+box['height']<=1024
-    page.screenshot(path=str(ROOT/'planning/document-menu.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-document-menu.png')))
     assert not errors,errors;b.close()
 print('PASS: four pen icons/cursors, long press, keyboard, touch, cancellation, File hover form, responsive bounds, single paste command')

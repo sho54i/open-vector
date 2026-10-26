@@ -25,7 +25,7 @@ Use descriptive tags for accepted milestones. Keep historical commits; promote t
 
 Requires Python, Playwright and its Chromium browser. Run `python3 tests/<name>.py` for Pencil, Apple Pencil, rulers, snapping, precision, Pathfinder, artboards and PNG/SVG drop. Run `python3 tests/entity_panel.py --offline` for fixture-based model-panel checks; omit `--offline` only with a configured model server.
 
-`python3 tests/review_cleanup.py` checks no-op Undo/Redo, field shortcut isolation and engine microbenchmarks. Timing results are diagnostic, not hardware-independent pass thresholds. `python3 tests/draw_perf.py --check-pixels --gate` times redraw, drag and hover on a 300-path / 18k-anchor document, asserts a pointer burst renders once per frame, and checks the canvas against `tests/draw_perf.sha256` (regenerate with `--save-pixels` after an intended visual change). Existing tests may regenerate screenshots under `planning/`; review those changes before saving a version.
+`python3 tests/review_cleanup.py` checks no-op Undo/Redo, field shortcut isolation and engine microbenchmarks. Timing results are diagnostic, not hardware-independent pass thresholds. `python3 tests/draw_perf.py --check-pixels --gate` times redraw, drag and hover on a 300-path / 18k-anchor document, asserts a pointer burst renders once per frame, and checks the canvas against `tests/draw_perf.sha256` (regenerate with `--save-pixels` after an intended visual change). Tests write disposable screenshots and model previews to `/tmp/open-vector-*`, outside the repository.
 
 ## Main-site deployment
 

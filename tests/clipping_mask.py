@@ -96,7 +96,7 @@ with sync_playwright() as p:
     assert not page.evaluate('loadOutline({paths:[serializeOutline().paths[0]]})') and state()==prior
     assert page.evaluate("parsePayload('<svg xmlns=\"http://www.w3.org/2000/svg\"><rect width=\"10\" height=\"10\" clip-path=\"url(#missing)\"/></svg>').paths.length") == 0
     # Record the finished panel and masked canvas for visual review.
-    setup();make();page.locator('#makeClip').scroll_into_view_if_needed();page.screenshot(path=str(ROOT/'planning/clipping-mask.png'))
+    setup();make();page.locator('#makeClip').scroll_into_view_if_needed();page.screenshot(path=str(Path('/tmp/open-vector-clipping-mask.png')))
     assert not errors,errors
     print('PASS clipping: canvas red inside only; V movement +1 on both paths; mask anchor (150,150)→(160,155); Undo/Redo/release; SVG alpha 0/255/0; PNG; SVG import; reload; independent copies; holes; guards.')
     browser.close()

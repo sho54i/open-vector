@@ -84,7 +84,7 @@ with sync_playwright() as p:
     assert paths()==[] and 'Document changed' in page.locator('#toastAlert').inner_text()
     page.evaluate('paths=>{window.__DRAW__.loadOutline({paths});window.__DRAW__.selectAllPaths();window.__DRAW__.zoomToSelection()}',saved)
     page.locator('#btnExportPNG').scroll_into_view_if_needed();page.wait_for_timeout(2500)
-    page.screenshot(path=str(ROOT/'planning/png-svg-drop.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-png-svg-drop.png')))
     assert not requests,requests
     assert not errors,errors
     print('PASS: dropped rectangles/circles add editable paths at drop location; one-step undo/redo; multi-file atomicity; malformed/unsupported input unchanged; transforms, compound holes, arcs, gradients, shared paste parser and reload; no external requests or browser errors.',flush=True)

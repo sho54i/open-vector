@@ -52,7 +52,7 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     assert page.locator('.menu-item').last.bounding_box()['y']<20,'menus stay on the top row at tablet width'
     assert_panel_rows()
-    page.screenshot(path=str(ROOT/'planning/buttons-tablet.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-buttons-tablet.png')))
     touch=browser.new_page(viewport={'width':768,'height':1024},has_touch=True,is_mobile=True)
     touch.goto((ROOT/'vector_pen_tool.html').as_uri());touch.wait_for_function('window.__DRAW_PANELS__')
     original=page;page=touch;assert_panel_rows();page=original;touch.close()

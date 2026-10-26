@@ -20,3 +20,7 @@ planning/logo/501-dr.ai
 # Deploy folders (separate Vercel projects, not part of the editor repo)
 redirect/
 share/
+
+# Disposable browser-test artifacts (tests now write to /tmp)
+/planning/*.png
+/planning/entity-*-preview.svg

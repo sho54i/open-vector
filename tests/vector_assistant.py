@@ -93,7 +93,7 @@ with sync_playwright() as p:
     assert Path(dl.value.path()).read_text()==(ROOT/'planning/vector-assistant.md').read_text()
     page.set_viewport_size({'width':768,'height':1024})
     box=page.locator('#vectorHelp').bounding_box();assert box['x']>=0 and box['x']+box['width']<=768 and box['height']<=1024
-    page.screenshot(path=str(ROOT/'planning/vector-assistant-help.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-vector-assistant-help.png')))
     page.keyboard.press('Escape');assert not page.locator('#vectorHelp').is_visible()
     assert page.locator('[data-menu="help"] .menu-item').evaluate('e=>e===document.activeElement')
     saved=artwork();page.wait_for_timeout(300);page.reload();page.wait_for_function('window.__VECTOR_ASSISTANT__')

@@ -105,7 +105,7 @@ with sync_playwright() as p:
     undo();assert document()['paths']==[] and len(boards())==2
     redo();assert len(document()['paths'])==1
     page.evaluate('window.__DRAW__.fitAllArtboards()');page.locator('.inspector').evaluate('el=>el.scrollTop=0')
-    page.wait_for_timeout(2000);page.screenshot(path=str(ROOT/'planning/artboards.png'))
+    page.wait_for_timeout(2000);page.screenshot(path=str(Path('/tmp/open-vector-artboards.png')))
     assert not errors,errors
     print('PASS: empty board save/open/reload/export, legacy migration, malformed input rejection, paste preserves boards, Entity insert targets active negative-origin board; no browser errors.',flush=True)
     # Pointer drawing still uses world coordinates on a non-origin board.

@@ -25,7 +25,7 @@ Long-press the **Pen** toolbar button (450 ms) to choose Pen, Add anchor, Remove
 
 ## Verification
 
-`python3 tests/next_three.py` exercises actual controls and canvas gestures: document dimensions/CMYK/JSON/reload/history, anchor counts and curved insertion, locked/minimum-count guards, Alt copy and centred proportional scale, Shift alignment and pen placement, Paste in Front stacking, and text-field shortcut isolation. `planning/document-setup.png` shows the tablet viewport.
+`python3 tests/next_three.py` exercises actual controls and canvas gestures: document dimensions/CMYK/JSON/reload/history, anchor counts and curved insertion, locked/minimum-count guards, Alt copy and centred proportional scale, Shift alignment and pen placement, Paste in Front stacking, and text-field shortcut isolation. `/tmp/open-vector-document-setup.png` shows the tablet viewport.
 
 Outcome-debug baseline: underlying insertion, conversion and clipboard operations already worked (2 → 3 anchors; smooth handles false → true; 1 → 2 paths). Changes extend application interactions, not device input decoding. New assertions include copy X=100 → 180 with original fixed; Shift move (100,100) → (160,100); centred scaling bounds (100,100)–(200,200) → (50,50)–(250,250).
 

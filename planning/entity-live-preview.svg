@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 332 432" width="332" height="432">
-  <path d="M 166 16 C 166 16, 66 316, 66 316 C 66 316, 266 316, 266 316 C 266 316, 166 16, 166 16 Z" fill="#ffd700" stroke="transparent" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/>
-  <path d="M 16 316 C 16 316, 66 316, 66 316 C 66 316, 46 416, 46 416 C 46 416, 16 316, 16 316 Z" fill="#00ffff" stroke="transparent" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/>
-  <path d="M 316 316 C 316 316, 266 316, 266 316 C 266 316, 286 416, 286 416 C 286 416, 316 316, 316 316 Z" fill="#00ffff" stroke="transparent" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/>
-  <path d="M 206 166 C 206 188.091, 188.091 206, 166 206 C 143.909 206, 126 188.091, 126 166 C 126 143.909, 143.909 126, 166 126 C 188.091 126, 206 143.909, 206 166 Z" fill="#00ffff" stroke="transparent" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter"/>
-</svg>

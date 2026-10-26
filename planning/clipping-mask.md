@@ -34,4 +34,4 @@ Canvas fill, ordinary/variable-width strokes and gradients are clipped. Canvas o
 
 Related browser regressions: reflect, stroke width, blend, brushes/swatches, Pathfinder, PNG/SVG drop and text/panels. The Pathfinder and PNG/drop roadmap assertions now check their own shipped cards rather than assuming every roadmap card is shipped.
 
-Screenshot: `planning/clipping-mask.png`. User/device acceptance remains pending.
+Screenshot: `/tmp/open-vector-clipping-mask.png`. User/device acceptance remains pending.

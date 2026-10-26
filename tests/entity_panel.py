@@ -36,10 +36,10 @@ with sync_playwright() as p:
         assert state()['pathCount']>0, state()
         assert paths()==original
         page.wait_for_function('document.querySelector("#entityImage").naturalWidth > 0')
-        (ROOT/'planning/entity-live-preview.svg').write_text(state()['svg'])
+        (Path('/tmp/open-vector-entity-live-preview.svg')).write_text(state()['svg'])
         page.locator('#entityConnection').evaluate('(el)=>el.open=false')
         page.locator('.inspector').evaluate('(el)=>el.scrollTop=0')
-        page.screenshot(path=str(ROOT/'planning/entity-live-panel.png'))
+        page.screenshot(path=str(Path('/tmp/open-vector-entity-live-panel.png')))
         print('REAL MODEL PASS:',model,'generated',state()['pathCount'],'editable paths; document unchanged.',flush=True)
     page.locator('#entityInsert').click()
     assert len(paths())==len(original)+state()['pathCount']
@@ -66,7 +66,7 @@ with sync_playwright() as p:
         }
         return gold>5000 && cyan>2000;
     }"""), 'Preview must display the whole gold rectangle and cyan circle'
-    (ROOT/'planning/entity-fixture-preview.svg').write_text(state()['svg'])
+    (Path('/tmp/open-vector-entity-fixture-preview.svg')).write_text(state()['svg'])
     page.locator('#entityCopy').click()
     page.wait_for_function('window.testClipboard === window.__ENTITY_VECTOR__.getState().svg')
     saved=state()['svg']
@@ -109,6 +109,6 @@ with sync_playwright() as p:
     assert paths()==baseline
     assert not errors,errors
     page.locator('.inspector').evaluate('(el)=>el.scrollTop=0')
-    page.screenshot(path=str(ROOT/'planning/entity-panel.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-entity-panel.png')))
     print('PASS: isolated preview, editable insert/undo/redo, Copy/Paste/manual fallback, invalid SVG and HTTP failures, cancellation, preview reload, no browser errors.',flush=True)
     browser.close()

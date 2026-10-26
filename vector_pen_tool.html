@@ -475,6 +475,13 @@
         .pen-flyout button:is(:hover,:focus-visible), .pen-flyout button[aria-checked="true"] { background:var(--bg-input); color:var(--accent-gold); }
         .pen-flyout svg { width:24px; height:24px; flex-shrink:0; }
         .document-submenu { position:fixed; width:320px; max-width:calc(100vw - 16px); max-height:calc(100dvh - 84px); overflow:auto; padding:16px; background:var(--bg-panel); border:1px solid var(--border-color); border-radius:4px; box-shadow:0 10px 30px #0006; color:var(--text-primary); }
+        #recentFiles { border-bottom:1px solid var(--border-color); }
+        #recentFiles summary { padding:9px 14px; cursor:pointer; font-size:12px; }
+        @media (pointer:coarse) { #recentFiles summary { min-height:44px; } }
+        #recentFiles summary:focus-visible { outline:2px solid var(--accent-cyan); outline-offset:-2px; }
+        #recentFiles p { padding:6px 14px; max-width:290px; font-size:10px; line-height:1.5; color:var(--text-muted); }
+        #recentFileList { max-height:240px; overflow:auto; }
+        #recentFileList button { max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
         .document-submenu h3 { font:12px var(--font-mono); color:var(--accent-gold); margin-bottom:12px; }
         .document-submenu label { display:block; margin-top:9px; margin-bottom:4px; font-size:11px; }
         .document-submenu .action-btn { background:var(--bg-input); border:1px solid var(--accent-gold); justify-content:center; padding:10px; margin-top:12px; }
@@ -491,6 +498,12 @@
                 <div class="menu-drop">
                     <button data-cmd="new">New<span class="kbd">Ctrl+N</span></button>
                     <button data-cmd="load">Open Outline…<span class="kbd">Ctrl+O</span></button>
+                    <details id="recentFiles">
+                        <summary>Open recent files</summary>
+                        <p>Browser copies of opened files, as they were when opened. Changes on disk are not synced.</p>
+                        <div id="recentFileList"></div>
+                        <button type="button" id="clearRecentFiles">Clear recent files</button>
+                    </details>
                     <button data-cmd="save">Save Outline<span class="kbd">Ctrl+S</span></button>
                     <div class="menu-sep"></div>
                     <div id="documentMenuBranch">
@@ -793,6 +806,17 @@
                     <button type="button" class="action-btn ghost" data-reflect="y" title="Mirror top and bottom across a horizontal line at Y">Flip vertical</button>
                 </div>
                 <p id="reflectStatus" role="status" aria-live="polite" style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:8px">Handles and gradients mirror with paths. Reflected text becomes editable outlines.</p>
+            </section>
+            <section class="panel-section" aria-label="Skew">
+                <div class="panel-header"><span>Skew</span></div>
+                <p style="font-size:11px;color:var(--text-muted);line-height:1.5">Shear the whole selection around its centre. Positive horizontal angles lean the bottom right; positive vertical angles lean the right side down.</p>
+                <label class="prop-label" for="skewAngle">ANGLE (DEGREES)</label>
+                <input id="skewAngle" class="prop-input" type="number" min="-85" max="85" step="any" value="15" style="margin:6px 0 8px">
+                <div class="align-row two">
+                    <button type="button" class="action-btn ghost" data-skew="x">Skew horizontal</button>
+                    <button type="button" class="action-btn ghost" data-skew="y">Skew vertical</button>
+                </div>
+                <p id="skewStatus" role="status" aria-live="polite" style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:8px">Transforms anchors and handles. Stroke weight stays fixed; gradients fit the new bounds. Text becomes editable outlines.</p>
             </section>
             <section class="panel-section" aria-label="Blend">
                 <div class="panel-header"><span>Blend</span></div>
@@ -4872,12 +4896,64 @@
         document.getElementById('btnZoomIn').addEventListener('click', () => runCmd('zoomIn'));
         document.getElementById('btnZoomOut').addEventListener('click', () => runCmd('zoomOut'));
         document.getElementById('zoomLabel').addEventListener('click', fitArtboard);
+        // Recent files retain source copies, never filesystem handles or unsaved edits.
+        const RECENT_FILES_KEY = 'draw-recent-files-v1';
+        const RECENT_FILES_LIMIT = 8, RECENT_FILES_SIZE = 1500000;
+        let recentFiles = [];
+        try {
+            const raw = localStorage.getItem(RECENT_FILES_KEY);
+            const saved = raw && raw.length <= RECENT_FILES_SIZE ? JSON.parse(raw) : [];
+            if (Array.isArray(saved)) recentFiles = saved.filter(r => r && typeof r.name === 'string' &&
+                r.name.length <= 255 && typeof r.source === 'string' && typeof r.opened === 'string').slice(0, RECENT_FILES_LIMIT);
+        } catch (_) {}
+        function renderRecentFiles() {
+            const list = document.getElementById('recentFileList');
+            list.replaceChildren();
+            if (!recentFiles.length) {
+                const empty = document.createElement('p'); empty.textContent = 'No recent files yet.'; list.append(empty);
+            }
+            for (const entry of recentFiles) {
+                const button = document.createElement('button'); button.type = 'button';
+                button.textContent = entry.name;
+                button.title = entry.name + ' — opened ' + entry.opened;
+                button.onclick = () => {
+                    if (pointerDown || svgDropBusy) { showToast('Finish the current action first.', true); return; }
+                    try {
+                        if (!injectParsed(parsePayload(entry.source), { merge:false, offset:false })) return;
+                        rememberRecentFile(entry.name, entry.source);
+                        document.querySelectorAll('.menu').forEach(m => m.classList.remove('open'));
+                        document.getElementById('recentFiles').open = false;
+                        viewport.focus();
+                    } catch (_) { showToast('Could not reopen this browser copy. Open the original file again.', true); }
+                };
+                list.append(button);
+            }
+            document.getElementById('clearRecentFiles').disabled = !recentFiles.length;
+        }
+        function rememberRecentFile(name, source) {
+            const entry = { name:name.slice(0,255), source, opened:new Date().toISOString() };
+            if (JSON.stringify([entry]).length > RECENT_FILES_SIZE) {
+                showToast('File opened. Too large to keep in recent files.', true); return;
+            }
+            recentFiles = [entry, ...recentFiles.filter(r => r.name !== entry.name || r.source !== source)].slice(0, RECENT_FILES_LIMIT);
+            while (JSON.stringify(recentFiles).length > RECENT_FILES_SIZE) recentFiles.pop();
+            try { localStorage.setItem(RECENT_FILES_KEY, JSON.stringify(recentFiles)); }
+            catch (_) { showToast('File opened. Recent files could not be saved; this copy is available in this tab only.', true); }
+            renderRecentFiles();
+        }
+        document.getElementById('clearRecentFiles').onclick = () => {
+            try { localStorage.removeItem(RECENT_FILES_KEY); }
+            catch (_) { showToast('Could not clear saved recent files.', true); return; }
+            recentFiles = []; renderRecentFiles();
+        };
+        renderRecentFiles();
         fileLoad.addEventListener('change', async () => {
             const file = fileLoad.files && fileLoad.files[0]; fileLoad.value = '';
             if (!file) return;
             try {
-                const parsed = parsePayload(await file.text());
-                injectParsed(parsed, { merge: false, offset: false });
+                const source = await file.text();
+                const parsed = parsePayload(source);
+                if (injectParsed(parsed, { merge: false, offset: false })) rememberRecentFile(file.name, source);
             } catch (error) { showToast('Could not read file.', true); }
         });
 
@@ -6069,6 +6145,47 @@
             const input = document.getElementById('reflectCoordinate');
             const coordinate = custom ? (input.value.trim() ? Number(input.value) : NaN) : null;
             reflectSelection(button.dataset.reflect, coordinate, document.getElementById('reflectCopy').checked);
+        }));
+
+        function skewSelection(axis, degrees) {
+            const status = document.getElementById('skewStatus');
+            const fail = message => { status.textContent = message; return false; };
+            if (pointerDown || svgDropBusy) return fail('Finish the current action first.');
+            const source = completeClipSelection(pathSelection());
+            if (!source.length) return fail('Select one or more paths to skew.');
+            if (source.some(p => p.locked || p.visible === false)) return fail('Every selected path and clipping member must be visible and unlocked.');
+            if (!['x','y'].includes(axis) || !Number.isFinite(degrees) || Math.abs(degrees) > 85) return fail('Enter an angle between −85° and 85°.');
+            if (degrees === 0) return fail('Zero degrees leaves the selection unchanged.');
+            const bounds = unionPathBounds(source), other = axis === 'x' ? 'y' : 'x';
+            const centre = other === 'y' ? bounds.minY + bounds.height/2 : bounds.minX + bounds.width/2;
+            const factor = Math.tan(degrees * Math.PI/180);
+            let changed = false;
+            // Prepare and validate every path before committing any geometry.
+            const result = source.map(path => path.points.map(point => {
+                const next = clonePoint(point);
+                for (const v of [next,next.cp1,next.cp2]) {
+                    const value = v[axis] + factor * (v[other] - centre);
+                    if (value !== v[axis]) changed = true;
+                    v[axis] = value;
+                }
+                return next;
+            }));
+            if (result.some(points => points.some(point => [point,point.cp1,point.cp2].some(v =>
+                !Number.isFinite(v.x) || !Number.isFinite(v.y) || Math.abs(v.x) > 1e7 || Math.abs(v.y) > 1e7))))
+                return fail('Skew would exceed the coordinate limits. Try a smaller angle.');
+            if (!changed) return fail('This selection is unchanged at that angle.');
+            pushHistory();
+            source.forEach((path,i) => { path.points = result[i]; path.textRecipe = null; });
+            selectedPoint = null; selectedPoints = []; selectedHandle = null; eyedropPending = false;
+            setPathSelection(source); setMode('select');
+            pushHistory(); scheduleSessionSave(); updateInspector(); draw();
+            status.textContent = 'Skewed ' + source.length + (source.length === 1 ? ' path' : ' paths') +
+                ' ' + (axis === 'x' ? 'horizontally' : 'vertically') + ' by ' + degrees + '°.';
+            return true;
+        }
+        document.querySelectorAll('[data-skew]').forEach(button => button.addEventListener('click', () => {
+            const input = document.getElementById('skewAngle');
+            skewSelection(button.dataset.skew, input.value.trim() ? Number(input.value) : NaN);
         }));
 
         // A blend is expanded into ordinary editable paths, with no hidden live dependency.

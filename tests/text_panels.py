@@ -98,7 +98,7 @@ with sync_playwright() as p:
     page.locator('#viewport').focus();page.keyboard.press('Control+d')
     assert len(doc()['paths'])==2 and all(p['textRecipe']['text']=='Two\nlines' for p in doc()['paths'])
     page.evaluate('undo(); __DRAW__.selectPath(0)')
-    page.screenshot(path=str(Path(__file__).resolve().parents[1]/'planning/text-panels.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-text-panels.png')))
     assert not errors,errors
     print('PASS: text insert/update, font load, outlines, undo/redo, validation/lock, panel collapse/reorder/detach/minimise/hide/drag/dock and reload; no browser errors')
     roadmap=browser.new_page()

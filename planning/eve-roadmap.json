@@ -1,5 +1,5 @@
 {
-  "version": 44,
+  "version": 47,
   "filter": "all",
   "cards": [
     {
@@ -592,9 +592,42 @@
       "status": "testing",
       "why": "Queued from inbox.",
       "test": "Click two nodes and drag a free line; verify exact distance, zoom/pan invariance, px/mm/in units, locked/hidden nodes, zero length, cancellation, pen/touch input and unchanged document/history. Regress anchors, rulers, precision and Pencil. Verify Shift/Alt alone and combined, stationary key changes and finalized-result retention.",
-      "notes": "user can click two nodes, or they can draw a line to get a measurement. keep in the left toolbar.\n\nImplemented 2026-10-22: Measure (K) in the left toolbar. Click two anchors or drag a temporary line; read distance and X/Y deltas in Document setup units. Visible anchors snap within screen-space reach, including locked artwork; hidden paths are excluded. Escape, tool switch, cancellation and document reset clear measurements. No artwork or history entries are created. Chromium tests passed; user/device review pending. See planning/measure.md and tests/measure.py.\n\nAlt/Shift follow-up: Shift constrains to 45°; Alt measures symmetrically about the start; combine both. Live key changes update stationary previews. Finalized results retain modifiers; artwork/history unchanged. Expanded tests/measure.py passed.",
+      "notes": "user can click two nodes, or they can draw a line to get a measurement. keep in the left toolbar.\n\nuser can click two nodes, or they can draw a line to get a measurement. keep in the left toolbar.\n\nImplemented 2026-10-22: Measure (K) in the left toolbar. Click two anchors or drag a temporary line; read distance and X/Y deltas in Document setup units. Visible anchors snap within screen-space reach, including locked artwork; hidden paths are excluded. Escape, tool switch, cancellation and document reset clear measurements. No artwork or history entries are created. Chromium tests passed; user/device review pending. See planning/measure.md and tests/measure.py.\n\nAlt/Shift follow-up: Shift constrains to 45°; Alt measures symmetrically about the start; combine both. Live key changes update stationary previews. Finalized results retain modifiers; artwork/history unchanged. Expanded tests/measure.py passed.",
       "created": "2026-10-22T19:16:42.254Z",
       "updated": "2026-10-22T19:46:49.393815+00:00"
+    },
+    {
+      "id": "cuei6e9x",
+      "title": "open recent files",
+      "phase": "P6",
+      "status": "testing",
+      "why": "Queued from inbox.",
+      "test": "Reopen SVG/JSON via File → Open recent files; verify geometry, Undo/Redo, reload, keyboard access, entry limit, clear, malformed input and storage-full fallback.",
+      "notes": "Implemented 2026-10-25. Up to eight browser copies of opened files; source copies do not sync disk changes or unsaved edits. Tests/recent_files.py and menu regressions passed. Awaiting user review. See planning/recent-files.md.",
+      "created": "2026-10-25T13:13:37.317Z",
+      "updated": "2026-10-26T01:33:13.787143+00:00"
+    },
+    {
+      "id": "cl3ws5is",
+      "title": "minimise sidebar",
+      "phase": "P6",
+      "status": "parked",
+      "why": "Queued from inbox.",
+      "test": "",
+      "notes": "Detached widgets unaffected. Skipped at user request on 2026-10-25; parked during roadmap cleanup.",
+      "created": "2026-10-25T13:18:07.735Z",
+      "updated": "2026-10-26T01:31:21.467321+00:00"
+    },
+    {
+      "id": "c8p28llz",
+      "title": "skew object",
+      "phase": "P2",
+      "status": "testing",
+      "why": "Queued from inbox.",
+      "test": "Apply horizontal/vertical positive and negative fractional angles; verify anchors and handles around shared selection centre, groups and clip members, Undo/Redo, reload, JSON and SVG/PNG. Check invalid/zero angles, locked/hidden paths, coordinate bounds, compound contours, appearance, text-outline conversion and keyboard controls.",
+      "notes": "Implemented 2026-10-26. Skew inspector/Tools panel with horizontal and vertical shear, −85° to 85°, around shared anchor-bounds centre. Whole paths and clipping members transform atomically; text becomes editable outlines. Stroke weights remain fixed and gradient recipes fit new bounds, matching existing geometry-transform conventions. Tests/skew.py, tests/reflect.py and tests/recent_files.py passed. Awaiting user review. See planning/skew.md.",
+      "created": "2026-10-25T16:19:50.180Z",
+      "updated": "2026-10-26T01:25:30.093978+00:00"
     }
   ],
   "inbox": []

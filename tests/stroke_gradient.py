@@ -59,8 +59,8 @@ with sync_playwright() as p:
     # Gradient on a no-stroke path gives it a visible stroke.
     page.locator('[data-swap="none"]').click();assert st()['s']=='transparent'
     page.locator('[data-swap="gradient"]').click();assert st()['t']=='linear' and st()['s']!='transparent',st()
-    page.locator('.toolbar').screenshot(path=str(ROOT/'planning/stroke-gradient-swapper.png'))
-    page.screenshot(path=str(ROOT/'planning/stroke-gradient.png'))
+    page.locator('.toolbar').screenshot(path=str(Path('/tmp/open-vector-stroke-gradient-swapper.png')))
+    page.screenshot(path=str(Path('/tmp/open-vector-stroke-gradient.png')))
     assert not errors,errors
     print('PASS: stroke gradient via swapper + inspector stops, +/× stops, canvas ends, SVG export (straight line), re-import, undo, reload, toggle off, none→gradient')
     browser.close()

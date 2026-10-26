@@ -18,19 +18,19 @@ with sync_playwright() as p:
     light=pixel();assert light[:3]==[255,255,255] and light!=dark,(dark,light)
     after=page.evaluate('({svg:generateSVGString(),paths:serializeOutline().paths,history:history.length})')
     assert before==after,'Theme must not alter artwork, SVG or Undo history'
-    page.screenshot(path=str(ROOT/'planning/theme-light.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-theme-light.png')))
     page.reload();page.wait_for_function('window.__DRAW_PANELS__');page.wait_for_timeout(150)
     assert page.locator('html').get_attribute('data-theme')=='light'
     assert page.evaluate('serializeOutline().paths')==before['paths']
     page.get_by_role('button',name='Switch to dark theme',exact=True).click()
     assert page.locator('html').get_attribute('data-theme')=='dark'
-    page.screenshot(path=str(ROOT/'planning/theme-dark.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-theme-dark.png')))
     page.set_viewport_size({'width':768,'height':1024})
     page.get_by_role('button',name='Switch to light theme',exact=True).click()
     assert page.locator('#themeToggle').is_visible()
     assert page.locator('.studio-credit').is_visible()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
-    page.screenshot(path=str(ROOT/'planning/theme-tablet.png'))
+    page.screenshot(path=str(Path('/tmp/open-vector-theme-tablet.png')))
     assert not errors,errors
     print(f'PASS: logo/title/credit; theme pixel {dark}→{light}; unchanged artwork/SVG/history; reload; tablet; no browser errors')
     browser.close()

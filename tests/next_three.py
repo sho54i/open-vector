@@ -96,7 +96,7 @@ with sync_playwright() as p:
     page.evaluate("documentSettings={name:'Keep',colourMode:'cmyk',units:'mm',dpi:300};loadOutline({document:{name:'Replace'},paths:[{points:[{x:1,y:1},{x:2,y:2}]}]},{merge:true})")
     assert state()['document']['name']=='Keep'
     assert not errors,errors
-    page.set_viewport_size({'width':768,'height':1024});control('#documentForm').scroll_into_view_if_needed();page.wait_for_timeout(2600);page.screenshot(path=str(ROOT/'planning/document-setup.png'))
+    page.set_viewport_size({'width':768,'height':1024});control('#documentForm').scroll_into_view_if_needed();page.wait_for_timeout(2600);page.screenshot(path=str(Path('/tmp/open-vector-document-setup.png')))
     # Upgrade a saved roadmap without losing custom cards or duplicating these three.
     page.goto((ROOT/'ROADMAP.html').as_uri())
     page.evaluate("localStorage.setItem('eve-roadmap-v1',JSON.stringify({version:39,cards:[{id:'custom',title:'Keep me',status:'queued'}],inbox:[]}))")
