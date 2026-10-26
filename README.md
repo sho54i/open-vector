@@ -1,4 +1,4 @@
-# DRAW — EVE Vector Entity Studio
+# DRAW — Vector Studio
 
 Open `vector_pen_tool.html` in a browser. This is a static Canvas/vector editor: drawing, history, SVG/JSON import/export, PNG export and document storage run in the browser. Paper.js is bundled in `vendor/`. The optional Vector Assistant connects to a local or hosted Chat Completions-compatible model service. Browser agents can use the versioned `window.__VECTOR_ASSISTANT__` tool API without a model connection. Help in the top menu includes editor shortcuts, connection guidance and downloadable agent documentation. See [Vector Assistant guide](planning/vector-assistant.md). There is no server backend or standalone MCP transport in this repository.
 
